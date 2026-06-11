@@ -300,9 +300,9 @@ sb.auth.getSession().then(async function(r){
   _clienteCod = chk.data.codigo || '';
   _clienteNombre = chk.data.nombre || '';
   _tipoIva = chk.data.tipo_iva || 'I';
-  _tarifa = parseInt(chk.data.tarifa) || 1;
+  _tarifa = chk.data.tarifa !== null && chk.data.tarifa !== undefined ? parseInt(chk.data.tarifa) : 1;
   // 2. Cargar productos desde Supabase (RLS filtra publicar_web=true y vendible=true)
-  var res = await sb.from('articulos').select('codigo,descripcion,precio_t0,precio_t1,precio_t2,precio_t3,unidad_monetaria,desc_formato,uds_por_caja_fija,peso_medio_caja,familia_codigo,familia,marca,imagenes');
+  var res = await sb.from('articulos').select('codigo,descripcion,precio_t0,precio_t1,precio_t2,precio_t3,unidad_monetaria,desc_formato,uds_por_caja_fija,peso_medio_caja,familia_codigo,familia,marca,imagenes,grupo_iva');
   if(res.error || !res.data){
     document.getElementById('catalogo').innerHTML='<p class="vacio">Error al cargar productos. Recarga la p\u00e1gina.</p>';
     mostrarLoginWidget();
@@ -323,7 +323,8 @@ sb.auth.getSession().then(async function(r){
       familia: a.familia||'',
       imgs: a.imagenes||[],
       upc: Number(a.uds_por_caja_fija)||0,
-      peso: Number(a.peso_medio_caja)||0
+      peso: Number(a.peso_medio_caja)||0,
+      grupo_iva: Number(a.grupo_iva)||1
     };
   });
   _buildIndex();
