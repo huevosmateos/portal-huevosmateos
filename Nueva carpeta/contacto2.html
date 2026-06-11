@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contacto - Huevos Mateos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<style>:root{--azul:#0d0190;--azul2:#1b16c9;--yema:#f5b301;--txt:#1d1d27;--gris:#6b6b78;--linea:#e7e7ef;--bg:#fafafb}
+*{box-sizing:border-box}body{margin:0;font-family:'Manrope',system-ui,sans-serif;color:var(--txt);background:#fff;line-height:1.6}
+a{color:inherit;text-decoration:none}h1,h2,h3,h4{font-family:'Fraunces',Georgia,serif;font-weight:600;line-height:1.15;margin:0 0 .4em}
+.top{background:#fff;border-bottom:1px solid var(--linea)}
+.top-inner{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center}.logo-img{height:120px;width:auto}
+.logo-txt{font-family:'Fraunces',serif;font-size:26px;color:var(--azul)}.logo-txt b{color:var(--yema)}
+.top-info .tel{color:var(--gris);font-size:15px}.top-info b{color:var(--azul)}
+.nav{background:var(--azul)}.nav-inner{max-width:1180px;margin:0 auto;padding:0 20px;display:flex;gap:6px}
+.nav a{color:#fff;padding:14px 20px;font-weight:500;letter-spacing:.04em;font-size:14px;text-transform:uppercase;border-bottom:3px solid transparent}
+.nav a:hover{background:rgba(255,255,255,.08)}.nav a.activo{border-bottom-color:var(--yema)}
+main{max-width:1180px;margin:0 auto;padding:0 20px}
+.btn{display:inline-block;background:var(--azul);color:#fff;padding:13px 26px;border-radius:8px;font-weight:700;border:0;cursor:pointer;font-size:14px;letter-spacing:.03em;text-transform:uppercase}
+.btn:hover{background:var(--azul2)}.btn.ghost{background:transparent;color:var(--azul);border:2px solid var(--azul)}
+.hero{padding:64px 0 40px}.eyebrow{color:var(--yema);font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:13px;margin:0}
+.hero h1{font-size:64px;margin:.1em 0}.lead{font-size:22px;color:var(--azul);font-weight:500;margin:.2em 0 1em}
+.intro{padding:30px 0 50px;border-top:1px solid var(--linea)}
+.intro-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}.intro h2{font-size:30px}
+.mapbox{aspect-ratio:4/3;border-radius:12px;overflow:hidden;border:1px solid var(--linea)}.mapbox iframe{width:100%;height:100%;border:0}
+.mapbox.grande{aspect-ratio:auto;height:340px;border-radius:0;border:0;margin-bottom:30px}
+.trabaja{background:var(--bg);border-radius:14px;padding:30px 34px;margin:0 0 60px}.trabaja a{color:var(--azul);font-weight:700}
+.tienda{padding:24px 0 60px}
+.buscador{margin:10px 0 22px}.buscador input{display:block;margin:0 auto;width:100%;max-width:560px;padding:14px 18px;font-size:16px;border:1px solid var(--linea);border-radius:10px;font-family:inherit}
+.buscador input:focus{outline:none;border-color:var(--azul)}
+.tienda-grid{display:grid;grid-template-columns:240px 1fr;gap:30px;align-items:start}
+.side{position:sticky;top:14px;max-height:90vh;overflow:auto}.side h4{font-size:18px;text-transform:uppercase;letter-spacing:.04em}
+.side ul{list-style:none;margin:0;padding:0}
+.side a{display:flex;justify-content:space-between;gap:8px;padding:7px 12px;border-radius:8px;color:var(--gris);font-size:13.5px}
+.side a span{color:#aaa;font-size:12px}.side a:hover{background:var(--bg);color:var(--txt)}
+.side a.activo{background:var(--azul);color:#fff}.side a.activo span{color:#cfcffb}
+.fam-tit{font-size:24px;color:var(--azul);margin:30px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--yema)}
+.fam-tit:first-child{margin-top:0}.fam-tit small{color:var(--gris);font-weight:400;font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px}
+.card{border:1px solid var(--linea);border-radius:12px;overflow:hidden;background:#fff;transition:.15s}
+.card:hover{box-shadow:0 6px 24px rgba(13,1,144,.10);transform:translateY(-2px)}
+.card-img{position:relative;aspect-ratio:1;background:var(--bg);overflow:hidden}
+.card-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,#f0f0f6,#f0f0f6 12px,#eaeaf4 12px,#eaeaf4 24px);color:#9a9ab0;font-weight:700;font-size:20px;letter-spacing:.05em}
+.multi{position:absolute;bottom:8px;right:8px;background:rgba(13,1,144,.85);color:#fff;font-size:11px;padding:3px 8px;border-radius:20px;z-index:2}
+.card-body{padding:12px 14px}
+.marca{font-size:11px;color:var(--yema);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:0 0 2px}
+.card-body h3{font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;line-height:1.3;margin:0 0 4px}
+.envase{color:var(--gris);font-size:12px;margin:0 0 6px}.cod{color:#a0a0b0;font-size:12px;margin:0 0 8px}
+.precio{color:var(--azul);font-weight:700;font-size:18px;margin:0}.precio small{color:var(--gris);font-weight:400;font-size:12px}
+.vacio{color:var(--gris);padding:30px}
+.hint{background:#fff8e6;border:1px solid #f5d77a;color:#7a5d00;padding:10px 14px;border-radius:8px;margin:0 0 16px;font-size:14px}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:100}
+.lb.on{display:flex}.lb img{max-width:86vw;max-height:86vh;border-radius:8px;background:#fff}
+.lb-x{position:absolute;top:18px;right:26px;color:#fff;font-size:40px;cursor:pointer;line-height:1}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);color:#fff;border:0;font-size:34px;width:54px;height:54px;border-radius:50%;cursor:pointer}
+.lb-prev{left:20px}.lb-next{right:20px}
+.contacto{padding:10px 0 60px}.cont-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:40px}
+.cont-form label{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:12px;margin-bottom:8px;font-size:14px;color:var(--gris);font-weight:500}
+.cont-form label span{text-align:right;padding-right:4px}
+.cont-form input,.cont-form textarea{width:100%;margin-top:0;padding:8px 14px;border:1px solid var(--linea);border-radius:8px;font-family:inherit;font-size:15px}
+.cont-form label:not(:first-child) input,.cont-form label:not(:first-child) textarea{position:relative;top:-5px}
+.cont-form input:focus,.cont-form textarea:focus{outline:none;border-color:var(--azul)}
+.cont-datos{background:var(--bg);border-radius:12px;padding:24px 28px}.cont-datos p{margin:0 0 16px}
+.pie{background:var(--azul);color:#cfcffb;margin-top:40px}
+.pie-inner{max-width:1180px;margin:0 auto;padding:44px 20px;display:grid;grid-template-columns:1.4fr 2fr;gap:34px}
+.pie-logo{font-family:'Fraunces',serif;font-size:24px;color:#fff;margin-bottom:10px}.pie-logo b{color:var(--yema)}
+.pie h4{color:#fff;font-size:16px;text-transform:uppercase;letter-spacing:.05em}
+.pie ul{list-style:none;margin:0;padding:0;font-size:13px}.pie li{margin:4px 0}.pie a:hover{color:#fff}
+.pie-cats{column-count:3;column-gap:20px}
+.pie-info-block{margin-top:26px}
+.pie-bottom{border-top:1px solid rgba(255,255,255,.15);padding:16px;text-align:center;font-size:13px}
+@media(max-width:860px){.intro-grid,.cont-grid,.tienda-grid{grid-template-columns:1fr}.side{position:static;max-height:none}.hero h1{font-size:44px}.pie-inner{grid-template-columns:1fr}}
+/* === ACCESO CLIENTES (igual en las 4 paginas) === */
+.nav-inner{flex-wrap:wrap;align-items:center}
+#nav-login-widget{margin-left:auto}
+.nav-login{display:flex;align-items:center;gap:7px;padding:6px 0;flex-wrap:wrap;justify-content:flex-end}
+.nav-login input{padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-family:inherit}
+.nav-login input#nav-email{width:280px}
+.nav-login input#nav-pin{width:78px}
+.nav-login input::placeholder{color:rgba(255,255,255,.6)}
+.nav-login input:focus{outline:none;border-color:var(--yema);background:rgba(255,255,255,.2)}
+.nav-login button{background:var(--yema);color:#1d1d27;border:0;padding:7px 15px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.nav-login button:hover{background:#e0a400}
+.nav-login .msg{color:#ffd2d2;font-size:12px;width:100%;text-align:right}
+.nav-login .msg a{color:#fff;text-decoration:underline}
+.nav-logged{display:flex;align-items:center;gap:12px;color:#fff;font-size:13px;padding:6px 0}
+.nav-logged b{color:var(--yema)}
+.nav-logged button{background:transparent;border:1px solid rgba(255,255,255,.45);color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit}
+.nav-logged button:hover{background:rgba(255,255,255,.12)}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-inner">
+  <a href="index.html" class="logo"><img src="assets/logo.bmp" alt="Huevos Mateos" class="logo-img"></a>
+  <div class="top-info"><span class="tel">Llamanos: <b>927 415 311 - 639 75 55 93</b></span></div>
+</div></header>
+<nav class="nav"><div class="nav-inner">
+  <a href="index.html">Inicio</a>
+  <a href="tienda.html">Tienda</a>
+  <a href="contacto.html" class="activo">Contacto</a>
+</div></nav>
+
+<main class="contacto">
+  <div class="cont-grid">
+    <form class="cont-form" id="cont-form" onsubmit="return false">
+      <h2>Escribenos</h2>
+      <label><span>Tu nombre</span><input id="f-nombre" required></label>
+      <label><span>Tu email</span><input id="f-email" type="email"></label>
+      <label><span>Tu telefono</span><input id="f-tel" required></label>
+      <label><span>Asunto</span><input id="f-asunto"></label>
+      <label><span>Mensaje</span><textarea id="f-msg" rows="5"></textarea></label>
+      <div id="form-msg" style="display:none;margin-top:14px;padding:14px 18px;border-radius:8px;font-size:15px;font-weight:500"></div>
+      <button class="btn" type="button" id="btn-enviar" tabindex="-1" onclick="enviar(event)">Enviar mensaje</button>
+    </form>
+    <aside class="cont-datos">
+      <h2>Datos de contacto</h2>
+      <p><b>Direccion</b><br>Huevos Mateos, S.L.<br>Avda. Martin Palomino, 42 - 10600 Plasencia (Caceres)</p>
+      <p><b>Telefono</b><br>927 415 311 - 639 75 55 93</p>
+      <p><b>Email</b><br><a href="mailto:correo@huevosmateos.es">correo@huevosmateos.es</a></p>
+    </aside>
+  </div>
+</main>
+<script>
+function arrancarServidor(){
+  // Dispara el protocolo personalizado que ejecuta iniciar_servidor.bat
+  var iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.src = 'huevosmateos://arrancar';
+  document.body.appendChild(iframe);
+  setTimeout(function(){ document.body.removeChild(iframe); }, 3000);
+}
+
+// Enter actua como tabulador en los campos del formulario
+(function(){
+  var campos = ['f-nombre','f-email','f-tel','f-asunto','f-msg'];
+  campos.forEach(function(id, i){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' && el.tagName !== 'TEXTAREA'){
+        e.preventDefault();
+        var siguiente = document.getElementById(campos[i+1]);
+        if(siguiente) siguiente.focus();
+      }
+    });
+  });
+})();
+
+  ev.preventDefault();
+  var nombre   = (document.getElementById('f-nombre').value  ||'').trim();
+  var email    = (document.getElementById('f-email').value   ||'').trim();
+  var telefono = (document.getElementById('f-tel').value     ||'').trim();
+  var asunto   = (document.getElementById('f-asunto').value  ||'').trim();
+  var mensaje  = (document.getElementById('f-msg').value     ||'').trim();
+  var msgDiv   = document.getElementById('form-msg');
+  var btn      = document.getElementById('btn-enviar');
+
+  // Validar telefono
+  var soloDigitos = telefono.replace(/[\s\-\.]/g,'');
+  if(!telefono || !/^\d[\d\s\-\.]{7,}$/.test(telefono) || soloDigitos.length < 9){
+    msgDiv.style.display='block';
+    msgDiv.style.background='#fff3cd';
+    msgDiv.style.color='#856404';
+    msgDiv.style.border='1px solid #ffc107';
+    msgDiv.textContent='Por favor introduce un numero de telefono valido (minimo 9 digitos).';
+    document.getElementById('f-tel').focus();
+    return false;
+  }
+
+  btn.disabled=true; btn.textContent='Enviando...';
+  msgDiv.style.display='none';
+
+  // 1) Arrancar servidor via protocolo personalizado
+  arrancarServidor();
+
+  // 2) Esperar 2 segundos a que arranque y luego enviar
+  setTimeout(function(){
+    fetch('http://localhost:8765/contacto',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({nombre:nombre, email:email, telefono:telefono, asunto:asunto, mensaje:mensaje})
+    })
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.ok){
+        msgDiv.style.display='block';
+        msgDiv.style.background='#d1e7dd';
+        msgDiv.style.color='#0a3622';
+        msgDiv.style.border='1px solid #a3cfbb';
+        msgDiv.textContent='Su solicitud ha sido enviada correctamente. Contactaremos con usted a la mayor brevedad posible.';
+        btn.style.display='none';
+        document.querySelector('.cont-form').reset();
+      } else {
+        throw new Error(data.error||'Error desconocido');
+      }
+    })
+    .catch(function(){
+      msgDiv.style.display='block';
+      msgDiv.style.background='#f8d7da';
+      msgDiv.style.color='#58151c';
+      msgDiv.style.border='1px solid #f1aeb5';
+      msgDiv.textContent='No se pudo enviar el mensaje. Por favor llamenos al 639 75 55 93.';
+      btn.disabled=false; btn.textContent='Enviar mensaje';
+    });
+  }, 2000);
+
+  return false;
+}
+</script>
+
+<footer class="pie"><div class="pie-inner">
+  <div>
+    <div class="pie-logo">Huevos <b>Mateos</b></div>
+    <p>Avda. Martin Palomino, 42 - 10600 Plasencia (Caceres)</p>
+    <p>Tel: 927 415 311 - 639 75 55 93<br>Email: correo@huevosmateos.es</p>
+
+    <div class="pie-info-block">
+      <h4>Informacion</h4>
+      <ul>
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="tienda.html">Tienda</a></li>
+        <li><a href="contacto.html">Contacto</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div>
+    <h4>Categorias</h4>
+    <ul class="pie-cats"><li><a href="tienda.html?fam=Huevo%20Granel">Huevo Granel</a></li><li><a href="tienda.html?fam=Huevo%20Estuchado">Huevo Estuchado</a></li><li><a href="tienda.html?fam=Pollo%20Conejo%20y%20Aves">Pollo Conejo y Aves</a></li><li><a href="tienda.html?fam=Despiece%20de%20Pollo">Despiece de Pollo</a></li><li><a href="tienda.html?fam=Despiece%20Pollo%20Congelado">Despiece Pollo Congelado</a></li><li><a href="tienda.html?fam=Despiece%20de%20Pollo%20Barqueta">Despiece de Pollo Barqueta</a></li><li><a href="tienda.html?fam=Pavo%20y%20Caza">Pavo y Caza</a></li><li><a href="tienda.html?fam=Leche%20Brick%20y%20Botella">Leche Brick y Botella</a></li><li><a href="tienda.html?fam=Zumos%20Brick%20y%20Slim">Zumos Brick y Slim</a></li><li><a href="tienda.html?fam=Yogures%20y%20Postres">Yogures y Postres</a></li><li><a href="tienda.html?fam=Natas%20y%20Mantequillas">Natas y Mantequillas</a></li><li><a href="tienda.html?fam=Porciones%20Desayuno">Porciones Desayuno</a></li><li><a href="tienda.html?fam=Caldos%20y%20Vino">Caldos y Vino</a></li><li><a href="tienda.html?fam=Zumos%20Don%20Simon">Zumos Don Simon</a></li><li><a href="tienda.html?fam=Leche%20y%20Batidos%20Pascual">Leche y Batidos Pascual</a></li><li><a href="tienda.html?fam=Bifrutas%20Pascual">Bifrutas Pascual</a></li><li><a href="tienda.html?fam=Vivesoy%20Pascual">Vivesoy Pascual</a></li><li><a href="tienda.html?fam=Agua%20Mineral">Agua Mineral</a></li><li><a href="tienda.html?fam=Cafe%20Mocay">Cafe Mocay</a></li><li><a href="tienda.html?fam=Cereales%20Kellogs">Cereales Kellogs</a></li><li><a href="tienda.html?fam=Elaborados%20Frescos">Elaborados Frescos</a></li><li><a href="tienda.html?fam=Embutidos%20y%20Fiambres">Embutidos y Fiambres</a></li><li><a href="tienda.html?fam=Despiece%20de%20Cerdo%20Fresco">Despiece de Cerdo Fresco</a></li><li><a href="tienda.html?fam=Varios%20Cerdo">Varios Cerdo</a></li><li><a href="tienda.html?fam=Quesos">Quesos</a></li><li><a href="tienda.html?fam=Elaborados%20C%C3%A1rnicos">Elaborados Cárnicos</a></li><li><a href="tienda.html?fam=Empanados">Empanados</a></li><li><a href="tienda.html?fam=Ternera%20Despiece">Ternera Despiece</a></li><li><a href="tienda.html?fam=Especialidades%20el%20Guiso">Especialidades el Guiso</a></li><li><a href="tienda.html?fam=Atun%20y%20Aceite">Atun y Aceite</a></li></ul>
+  </div>
+</div>
+<div class="pie-bottom">© 2026 · Huevos Mateos, S.L.</div>
+</footer>
+</body></html>
