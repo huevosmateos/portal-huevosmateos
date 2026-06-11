@@ -231,169 +231,209 @@ function normEmail(s){return (s||'').trim().toLowerCase();}
 const SUPABASE_URL = 'https://pkwttturncewwdlpxrxz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3R0dHVybmNld3dkbHB4cnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTQ1OTEsImV4cCI6MjA5NTczMDU5MX0.aFKZbuO-0zO--SckT-FnjkGdOAV5nBWeEoLgMcV80VY';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Detectar llegada desde enlace de recuperación de contraseña
 sb.auth.onAuthStateChange(async function(event, session){
-  if(event==='SIGNED_IN' && session && session.user){
-    var hash = window.location.hash || '';
+  var hash = window.location.hash || '';
+  var esRecovery = hash.indexOf('type=recovery') >= 0;
+
+  if(event === 'PASSWORD_RECOVERY'){
+    history.replaceState(null, '', window.location.pathname);
+    mostrarModal('crearpass', true);
+    return;
+  }
+  if(event === 'SIGNED_IN' && session && session.user){
+    // Si el token es de recuperación, NO redirigir: esperar a PASSWORD_RECOVERY
+    if(esRecovery) return;
     var esMagicLink = hash.indexOf('access_token') >= 0;
-    // Limpiar hash de la URL
     if(hash) history.replaceState(null, '', window.location.pathname);
     var meta = session.user.user_metadata || {};
-    // Si viene de magic link O no tiene contraseña -> obligar a crear contraseña
     if(esMagicLink || !meta.has_password){
-      abrirModal('crearpass');
+      mostrarModal('crearpass', true);
       return;
     }
     location.replace('tiendaconprecio.html');
   }
 });
+
 function mostrarLoginWidget(){
-  var w=document.getElementById('nav-login-widget'); if(!w)return;
-  w.innerHTML='<button class="nav-btn-acceso" onclick="abrirModal()">&#128274; Acceso clientes</button>';
+  var w = document.getElementById('nav-login-widget'); if(!w) return;
+  w.innerHTML = '<button class="nav-btn-acceso" onclick="abrirLogin()">&#128274; Acceso clientes</button>';
 }
-function abrirModal(panel){
-  document.getElementById('hm-modal').style.display='flex';
-  var p=panel||'login';
-  document.querySelectorAll('.hm-panel').forEach(function(el){el.style.display='none';});
-  document.querySelectorAll('.hm-tab').forEach(function(el){el.classList.remove('activo');});
-  // Ocultar pestañas y boton cerrar cuando es pantalla obligatoria (crear contraseña)
-  var tabs=document.querySelector('.hm-tabs');
-  var close=document.querySelector('.hm-close');
-  if(p==='crearpass' || p==='altanuevo'){
-    if(tabs)tabs.style.display='none';
-    if(close)close.style.display='none';
-  } else {
-    if(tabs)tabs.style.display='flex';
-    if(close)close.style.display='block';
-  }
-  var pp=document.getElementById('hm-panel-'+p), tt=document.getElementById('hm-tab-'+p);
-  if(pp)pp.style.display='block'; if(tt)tt.classList.add('activo');
+function abrirLogin(){
+  document.getElementById('hm-modal').style.display = 'flex';
+  _mostrarPanel('email', true);
+  setTimeout(function(){ var el=document.getElementById('hm-email'); if(el) el.focus(); }, 50);
 }
-function cerrarModal(){document.getElementById('hm-modal').style.display='none';}
-async function intentarLogin(){
-  var email=document.getElementById('hm-email').value.trim();
-  var pass=document.getElementById('hm-pass').value;
-  var msg=document.getElementById('hm-msg-login');
-  if(!email||!pass){msg.className='modal-msg err';msg.style.display='block';msg.textContent='Rellena email y contraseña.';return;}
-  var btn=document.getElementById('hm-btn-login');
-  btn.disabled=true; btn.textContent='Entrando...';
-  var res=await sb.auth.signInWithPassword({email:email,password:pass});
-  if(res.error){
-    var m=res.error.message||'';
-    if(m.includes('Invalid login') || m.includes('invalid_credentials') || m.includes('Email not confirmed')){
-      // Comprobar si el email está en nuestra BD de clientes
-      var chk=await sb.rpc('cliente_autorizado',{p_email:email});
-      if(chk.data===true){
-        // Está en BD pero la contraseña es incorrecta
-        m='Email o contraseña incorrectos.';
-      } else {
-        // No está en nuestra BD: debe solicitar alta primero
-        m='Este email no está registrado como cliente. Ve a la pestaña "Alta de clientes" para solicitar acceso.';
-      }
-    }
-    msg.style.display='block';
-    msg.className='modal-msg err'; msg.textContent=m;
-    btn.disabled=false; btn.textContent='Entrar';
-  }
+function cerrarModal(){
+  document.getElementById('hm-modal').style.display = 'none';
 }
-async function enviarEnlace(){
-  var email=document.getElementById('hm-email-reg').value.trim().toLowerCase();
-  var msg=document.getElementById('hm-msg-reg');
-  if(!email){msg.className='modal-msg err';msg.style.display='block';msg.textContent='Introduce tu email.';return;}
-  var btn=document.getElementById('hm-btn-reg');
-  btn.disabled=true; btn.textContent='Comprobando...';
-  // 1. Comprobar estado del cliente en BD
-  var chk = await sb.rpc('estado_cliente', {p_email: email});
-  if(chk.error){
-    msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Error al consultar. Inténtalo de nuevo.';
-    btn.disabled=false; btn.textContent='Enviar Solicitud de Acceso';
-    return;
-  }
-  if(chk.data === 'no_autorizado'){
-    msg.className='modal-msg err'; msg.style.display='block';
-    msg.textContent='Su acceso no está activado. Contacte con nosotros para activarlo.';
-    btn.disabled=false; btn.textContent='Enviar Solicitud de Acceso';
-    return;
-  }
-  if(chk.data !== 'autorizado'){
-    // No existe en BD -> mostrar formulario alta
-    btn.disabled=false; btn.textContent='Enviar Solicitud de Acceso';
-    document.getElementById('hm-altanuevo-email').value = email;
-    abrirModal('altanuevo');
-    return;
-  }
-  // 2. Cliente AUTORIZADO -> enviar magic link
-  var res = await sb.auth.signInWithOtp({email:email,options:{shouldCreateUser:true,emailRedirectTo:'https://huevosmateos.github.io/portal-huevosmateos/tienda.html'}});
-  btn.disabled=false; btn.textContent='Enviar Solicitud de Acceso';
-  if(res.error){
-    msg.className='modal-msg err'; msg.style.display='block'; msg.textContent=res.error.message||'Error.';
-  } else {
-    cerrarModal();
-    var aviso=document.createElement('div');
-    aviso.style.cssText='position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a7a4a;color:#fff;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.2);text-align:center;max-width:90%';
-    aviso.textContent='✓ Solicitud enviada. Revisa tu buzón de correo y pulsa el enlace para acceder.';
-    document.body.appendChild(aviso);
-    setTimeout(function(){aviso.remove();}, 6000);
-  }
+// Panel interno: 'email' | 'pass' | 'altanuevo' | 'recuperar' | 'crearpass'
+// cerrable = false oculta la X (pantallas obligatorias)
+function mostrarModal(panel, sinCerrar){
+  document.getElementById('hm-modal').style.display = 'flex';
+  _mostrarPanel(panel, !sinCerrar);
+}
+function _mostrarPanel(panel, cerrable){
+  document.querySelectorAll('.hm-panel').forEach(function(el){ el.style.display = 'none'; });
+  var pp = document.getElementById('hm-panel-' + panel);
+  if(pp) pp.style.display = 'block';
+  var btn = document.getElementById('hm-close-btn');
+  if(btn) btn.style.display = cerrable ? 'block' : 'none';
+}
+function volverAEmail(){
+  _mostrarPanel('email', true);
+  document.getElementById('hm-msg-email').style.display = 'none';
+}
+function mostrarPass(){
+  _mostrarPanel('pass', true);
+  document.getElementById('hm-msg-login').style.display = 'none';
+  setTimeout(function(){ var el=document.getElementById('hm-pass'); if(el){ el.value=''; el.focus(); } }, 50);
+}
+function mostrarRecuperar(){
+  var email = document.getElementById('hm-email').value.trim();
+  var rec = document.getElementById('hm-email-rec');
+  if(rec) rec.value = email;
+  _mostrarPanel('recuperar', true);
 }
 
-// Solicitud de alta de cliente NUEVO (no esta en BD)
+// PASO 1: comprobar email en Supabase
+async function comprobarEmail(){
+  var email = document.getElementById('hm-email').value.trim().toLowerCase();
+  var msg = document.getElementById('hm-msg-email');
+  msg.style.display = 'none';
+  if(!email){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Introduce tu email.'; return; }
+  var btn = document.getElementById('hm-btn-email');
+  btn.disabled = true; btn.textContent = 'Comprobando...';
+
+  var chk = await sb.rpc('estado_cliente', {p_email: email});
+  btn.disabled = false; btn.textContent = 'Continuar';
+
+  if(chk.error){
+    msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Error al consultar. Inténtalo de nuevo.';
+    return;
+  }
+
+  if(chk.data === 'autorizado'){
+    // Email existe y está habilitado -> pedir contraseña
+    document.getElementById('hm-email-display').textContent = email;
+    mostrarPass();
+    return;
+  }
+
+  if(chk.data === 'no_autorizado'){
+    // Existe pero no habilitado -> formulario de alta con aviso
+    document.getElementById('hm-altanuevo-email').value = email;
+    document.getElementById('hm-alta-titulo').textContent = 'Acceso no activado';
+    document.getElementById('hm-alta-desc').textContent = 'Tu cuenta existe pero no está activada todavía. Déjanos tus datos y nos pondremos en contacto contigo.';
+    document.getElementById('hm-altanuevo-nombre').value = '';
+    document.getElementById('hm-altanuevo-tel').value = '';
+    document.getElementById('hm-msg-altanuevo').style.display = 'none';
+    _mostrarPanel('altanuevo', true);
+    return;
+  }
+
+  // No existe en BD -> formulario solicitud de alta
+  document.getElementById('hm-altanuevo-email').value = email;
+  document.getElementById('hm-alta-titulo').textContent = 'Solicitar acceso';
+  document.getElementById('hm-alta-desc').textContent = 'Tu email no está registrado como cliente. Déjanos tus datos y nos pondremos en contacto contigo para darte de alta.';
+  document.getElementById('hm-altanuevo-nombre').value = '';
+  document.getElementById('hm-altanuevo-tel').value = '';
+  document.getElementById('hm-msg-altanuevo').style.display = 'none';
+  _mostrarPanel('altanuevo', true);
+}
+
+// PASO 2a: entrar con contraseña
+async function intentarLogin(){
+  var email = document.getElementById('hm-email').value.trim();
+  var pass = document.getElementById('hm-pass').value;
+  var msg = document.getElementById('hm-msg-login');
+  if(!pass){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Introduce tu contraseña.'; return; }
+  var btn = document.getElementById('hm-btn-login');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  var res = await sb.auth.signInWithPassword({email: email, password: pass});
+  if(res.error){
+    msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Contraseña incorrecta. Inténtalo de nuevo.';
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+  // Si no hay error, onAuthStateChange redirige a tiendaconprecio
+}
+
+// PASO 2b: enviar solicitud de alta (nuevo o no autorizado)
 async function enviarAltaNueva(){
   var email = document.getElementById('hm-altanuevo-email').value.trim();
   var nombre = document.getElementById('hm-altanuevo-nombre').value.trim();
   var telefono = document.getElementById('hm-altanuevo-tel').value.trim();
   var msg = document.getElementById('hm-msg-altanuevo');
-  msg.style.display='none';
+  msg.style.display = 'none';
   if(!email||!nombre||!telefono){
     msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Rellena todos los campos.';
     return;
   }
-  // Validar telefono: 9 digitos, opcionalmente con +34 o 0034
   var telLimpio = telefono.replace(/[\s\-\.]/g,'').replace(/^(\+34|0034)/,'');
   if(!/^[6789]\d{8}$/.test(telLimpio)){
     msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Introduce un teléfono válido (9 dígitos).';
     return;
   }
   var btn = document.getElementById('hm-btn-altanuevo');
-  btn.disabled=true; btn.textContent='Enviando...';
-  // Llamar a la función RPC que envía el email al admin
+  btn.disabled = true; btn.textContent = 'Enviando...';
   var res = await sb.rpc('solicitar_alta_cliente', {p_email: email, p_nombre: nombre, p_telefono: telefono});
-  btn.disabled=false; btn.textContent='Enviar solicitud';
+  btn.disabled = false; btn.textContent = 'Enviar solicitud';
   if(res.error){
     msg.className='modal-msg err'; msg.style.display='block'; msg.textContent=res.error.message||'Error al enviar la solicitud.';
   } else {
     cerrarModal();
-    var aviso=document.createElement('div');
-    aviso.style.cssText='position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a7a4a;color:#fff;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.2);text-align:center;max-width:90%';
-    aviso.textContent='✓ Solicitud enviada. Nos pondremos en contacto contigo en breve.';
+    var aviso = document.createElement('div');
+    aviso.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a7a4a;color:#fff;padding:16px 28px;border-radius:10px;font-size:15px;font-weight:600;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.2);text-align:center;max-width:90%';
+    aviso.textContent = '✓ Solicitud enviada. Nos pondremos en contacto contigo en breve.';
     document.body.appendChild(aviso);
-    setTimeout(function(){aviso.remove();}, 6000);
+    setTimeout(function(){ aviso.remove(); }, 6000);
   }
 }
-function togglePass(id){var el=document.getElementById(id);if(el)el.type=el.type==='password'?'text':'password';}
+
+// Recuperar contraseña: usa resetPasswordForEmail (no magic link)
+async function enviarRecuperar(){
+  var email = document.getElementById('hm-email-rec').value.trim().toLowerCase();
+  var msg = document.getElementById('hm-msg-rec');
+  msg.style.display = 'none';
+  if(!email){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Introduce tu email.'; return; }
+  var btn = document.getElementById('hm-btn-rec');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  var res = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://huevosmateos.github.io/portal-huevosmateos/tienda.html'
+  });
+  btn.disabled = false; btn.textContent = 'Enviar email';
+  if(res.error){
+    msg.className='modal-msg err'; msg.style.display='block'; msg.textContent=res.error.message||'Error al enviar.';
+  } else {
+    msg.className='modal-msg ok'; msg.style.display='block';
+    msg.textContent='✓ Email enviado. Revisa tu buzón y pulsa el enlace para crear una nueva contraseña.';
+    btn.disabled = true;
+  }
+}
+
+function togglePass(id){ var el=document.getElementById(id); if(el) el.type = el.type==='password'?'text':'password'; }
 
 async function guardarContrasena(){
-  var p1=document.getElementById('hm-newpass1').value;
-  var p2=document.getElementById('hm-newpass2').value;
-  var msg=document.getElementById('hm-msg-crearpass');
-  if(!p1||p1.length<6){msg.className='modal-msg err';msg.style.display='block';msg.textContent='La contraseña debe tener al menos 6 caracteres.';return;}
-  if(p1!==p2){msg.className='modal-msg err';msg.style.display='block';msg.textContent='Las contraseñas no coinciden.';return;}
-  var btn=document.getElementById('hm-btn-crearpass');
-  btn.disabled=true; btn.textContent='Guardando...';
-  var res=await sb.auth.updateUser({
-    password: p1,
-    data: { has_password: true }
-  });
+  var p1 = document.getElementById('hm-newpass1').value;
+  var p2 = document.getElementById('hm-newpass2').value;
+  var msg = document.getElementById('hm-msg-crearpass');
+  if(!p1||p1.length<6){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='La contraseña debe tener al menos 6 caracteres.'; return; }
+  if(p1!==p2){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Las contraseñas no coinciden.'; return; }
+  var btn = document.getElementById('hm-btn-crearpass');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  var res = await sb.auth.updateUser({ password: p1, data: { has_password: true } });
   if(res.error){
     msg.className='modal-msg err'; msg.style.display='block'; msg.textContent=res.error.message||'Error al guardar.';
-    btn.disabled=false; btn.textContent='Guardar contraseña';
+    btn.disabled = false; btn.textContent = 'Guardar contraseña';
     return;
   }
-  msg.className='modal-msg ok'; msg.style.display='block'; msg.textContent='¡Contraseña guardada! Ahora vas a la tienda para entrar con tu email y la contraseña que acabas de crear.';
-  // Cerrar sesion automatica y redirigir a tienda para que entre normalmente
-  await sb.auth.signOut();
-  setTimeout(function(){location.replace('tienda.html');}, 2500);
+  msg.className='modal-msg ok'; msg.style.display='block';
+  msg.textContent='¡Contraseña guardada! Accediendo...';
+  // La sesión ya es válida tras updateUser, redirigir directamente
+  setTimeout(function(){ location.replace('tiendaconprecio.html'); }, 1500);
 }
-// Modal solo se cierra con boton X
+// — fin auth —
 function tarjeta(p){
   var imgs=p.imgs||[];
   var zoom=imgs.length?' data-codigo=\''+p.codigo+'\' style=\'cursor:zoom-in\'':'';
@@ -477,17 +517,28 @@ document.getElementById('fam-list').addEventListener('click',function(e){
 });
 (function(){try{var f=new URLSearchParams(location.search).get('fam');if(f){var a=document.querySelector('#fam-list a[data-fam="'+f+'"]');if(a){document.querySelectorAll('#fam-list a').forEach(function(x){x.classList.remove('activo');});a.classList.add('activo');}}}catch(e){}})();
 pintar(); initMobile();
-// Si el cliente ya está logueado, redirigir a tiendaconprecio preservando ?fam=
+// Si venimos de un enlace de recuperación de contraseña, NO redirigir:
+// dejar que onAuthStateChange dispare PASSWORD_RECOVERY y muestre el panel.
 (function(){
-  try{
-    var em=localStorage.getItem('hm_cliente');
-    if(em){
-      var fam=new URLSearchParams(location.search).get('fam');
-      location.replace('tiendaconprecio.html'+(fam?'?fam='+encodeURIComponent(fam):''));
+  var hash = window.location.hash || '';
+  if(hash.indexOf('type=recovery') >= 0){
+    // onAuthStateChange se encargará; solo mostramos el widget mientras tanto
+    mostrarLoginWidget();
+    return;
+  }
+  // Si el cliente ya tiene sesión activa en Supabase, redirigir a tiendaconprecio
+  sb.auth.getSession().then(function(r){
+    if(r.data && r.data.session && r.data.session.user){
+      var meta = r.data.session.user.user_metadata || {};
+      if(meta.has_password){
+        var fam = new URLSearchParams(location.search).get('fam');
+        location.replace('tiendaconprecio.html'+(fam?'?fam='+encodeURIComponent(fam):''));
+        return;
+      }
     }
-  }catch(e){}
+    mostrarLoginWidget(); pintar(); initMobile();
+  });
 })();
-mostrarLoginWidget(); pintar(); initMobile();
 
 function toggleFamilias(){
   var s=document.getElementById('side-fam');
@@ -531,25 +582,56 @@ window.addEventListener('resize',function(){
 
 <div id="hm-modal" class="hm-modal">
   <div class="hm-box">
-    <button class="hm-close" onclick="cerrarModal()">&times;</button>
-    <div class="hm-tabs">
-      <button id="hm-tab-login" class="hm-tab activo" onclick="abrirModal('login')">Entrar</button>
-      <button id="hm-tab-registro" class="hm-tab" onclick="abrirModal('registro')">Alta de clientes</button>
+    <button class="hm-close" id="hm-close-btn" onclick="cerrarModal()">&times;</button>
+
+    <!-- PASO 1: Email -->
+    <div id="hm-panel-email" class="hm-panel">
+      <h3 style="color:var(--azul);margin:0 0 6px">Acceso clientes</h3>
+      <p style="font-size:14px;color:var(--gris);margin:0 0 20px">Introduce tu email para continuar.</p>
+      <div class="hm-field"><label>Email</label><input type="email" id="hm-email" placeholder="tu@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')comprobarEmail()"></div>
+      <button id="hm-btn-email" class="hm-submit" onclick="comprobarEmail()">Continuar</button>
+      <div id="hm-msg-email" class="modal-msg" style="display:none"></div>
     </div>
-    <div id="hm-panel-login" class="hm-panel">
-      <div class="hm-field"><label>Email</label><input type="email" id="hm-email" placeholder="tu@email.com" autocomplete="email"></div>
-      <div class="hm-field"><label>Contraseña</label><div class="hm-pass-wrap"><input type="password" id="hm-pass" placeholder="••••••••" autocomplete="current-password"><button class="hm-pass-toggle" onclick="togglePass('hm-pass')" type="button">&#128065;</button></div></div>
-      <label class="hm-remember"><input type="checkbox" checked> Recordar en este dispositivo</label>
+
+    <!-- PASO 2a: Contraseña (cliente autorizado) -->
+    <div id="hm-panel-pass" class="hm-panel" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
+        <button onclick="volverAEmail()" style="background:none;border:none;cursor:pointer;color:var(--gris);font-size:20px;padding:0;line-height:1">&#8592;</button>
+        <span id="hm-email-display" style="font-size:14px;color:var(--gris);word-break:break-all"></span>
+      </div>
+      <div class="hm-field"><label>Contraseña</label><div class="hm-pass-wrap"><input type="password" id="hm-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')intentarLogin()"><button class="hm-pass-toggle" onclick="togglePass('hm-pass')" type="button">&#128065;</button></div></div>
       <button id="hm-btn-login" class="hm-submit" onclick="intentarLogin()">Entrar</button>
       <div id="hm-msg-login" class="modal-msg" style="display:none"></div>
-      <div class="hm-link"><a onclick="abrirModal('recuperar')">¿Olvidaste tu contraseña?</a></div>
+      <div class="hm-link"><a onclick="mostrarRecuperar()">¿Olvidaste tu contraseña?</a></div>
     </div>
-    <div id="hm-panel-registro" class="hm-panel" style="display:none">
-      <p style="font-size:14px;color:var(--gris);margin:0 0 20px">Introduce tu email para solicitar acceso al portal.</p>
-      <div class="hm-field"><label>Email</label><input type="email" id="hm-email-reg" placeholder="tu@email.com" autocomplete="email"></div>
-      <button id="hm-btn-reg" class="hm-submit" onclick="enviarEnlace()">Enviar Solicitud de Acceso</button>
-      <div id="hm-msg-reg" class="modal-msg" style="display:none"></div>
+
+    <!-- PASO 2b: Alta nueva (email no existe o no autorizado) -->
+    <div id="hm-panel-altanuevo" class="hm-panel" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <button onclick="volverAEmail()" style="background:none;border:none;cursor:pointer;color:var(--gris);font-size:20px;padding:0;line-height:1">&#8592;</button>
+        <h3 style="color:var(--azul);margin:0" id="hm-alta-titulo">Solicitar acceso</h3>
+      </div>
+      <p id="hm-alta-desc" style="font-size:14px;color:var(--gris);margin:0 0 20px">Déjanos tus datos y nos pondremos en contacto contigo para darte de alta como cliente.</p>
+      <div class="hm-field"><label>Email</label><input type="email" id="hm-altanuevo-email" placeholder="tu@email.com" readonly></div>
+      <div class="hm-field"><label>Nombre o empresa</label><input type="text" id="hm-altanuevo-nombre" placeholder="Tu nombre o nombre del negocio"></div>
+      <div class="hm-field"><label>Teléfono</label><input type="tel" id="hm-altanuevo-tel" placeholder="Ej: 654321789" maxlength="15" inputmode="tel"></div>
+      <button id="hm-btn-altanuevo" class="hm-submit" onclick="enviarAltaNueva()">Enviar solicitud</button>
+      <div id="hm-msg-altanuevo" class="modal-msg" style="display:none"></div>
     </div>
+
+    <!-- PASO 2c: Recuperar contraseña -->
+    <div id="hm-panel-recuperar" class="hm-panel" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <button onclick="mostrarPass()" style="background:none;border:none;cursor:pointer;color:var(--gris);font-size:20px;padding:0;line-height:1">&#8592;</button>
+        <h3 style="color:var(--azul);margin:0">Recuperar contraseña</h3>
+      </div>
+      <p style="font-size:14px;color:var(--gris);margin:0 0 20px">Te enviaremos un email para restablecer tu contraseña.</p>
+      <div class="hm-field"><label>Email</label><input type="email" id="hm-email-rec" placeholder="tu@email.com" autocomplete="email"></div>
+      <button id="hm-btn-rec" class="hm-submit" onclick="enviarRecuperar()">Enviar email</button>
+      <div id="hm-msg-rec" class="modal-msg" style="display:none"></div>
+    </div>
+
+    <!-- CREAR CONTRASEÑA (primer acceso vía magic link) -->
     <div id="hm-panel-crearpass" class="hm-panel" style="display:none">
       <h3 style="color:var(--azul);margin:0 0 8px">¡Bienvenido!</h3>
       <p style="font-size:14px;color:var(--gris);margin:0 0 20px">Para acceder en el futuro, crea una contraseña segura.</p>
@@ -557,23 +639,6 @@ window.addEventListener('resize',function(){
       <div class="hm-field"><label>Repite la contraseña</label><div class="hm-pass-wrap"><input type="password" id="hm-newpass2" placeholder="Repite la contraseña"><button class="hm-pass-toggle" onclick="togglePass('hm-newpass2')" type="button">&#128065;</button></div></div>
       <button id="hm-btn-crearpass" class="hm-submit" onclick="guardarContrasena()">Guardar contraseña</button>
       <div id="hm-msg-crearpass" class="modal-msg" style="display:none"></div>
-    </div>
-    <div id="hm-panel-altanuevo" class="hm-panel" style="display:none">
-      <h3 style="color:var(--azul);margin:0 0 8px">Tu email no está registrado</h3>
-      <p style="font-size:14px;color:var(--gris);margin:0 0 20px">Déjanos tus datos y nos pondremos en contacto contigo para darte de alta como cliente.</p>
-      <div class="hm-field"><label>Email</label><input type="email" id="hm-altanuevo-email" placeholder="tu@email.com" readonly></div>
-      <div class="hm-field"><label>Nombre o empresa</label><input type="text" id="hm-altanuevo-nombre" placeholder="Tu nombre o nombre del negocio"></div>
-      <div class="hm-field"><label>Teléfono</label><input type="tel" id="hm-altanuevo-tel" placeholder="Ej: 654321789" maxlength="15" inputmode="tel"></div>
-      <button id="hm-btn-altanuevo" class="hm-submit" onclick="enviarAltaNueva()">Enviar solicitud</button>
-      <div id="hm-msg-altanuevo" class="modal-msg" style="display:none"></div>
-      <div class="hm-link"><a onclick="abrirModal('registro')">&#8592; Volver</a></div>
-    </div>
-    <div id="hm-panel-recuperar" class="hm-panel" style="display:none">
-      <p style="font-size:14px;color:var(--gris);margin:0 0 20px">Te enviaremos un enlace para restablecer tu contraseña.</p>
-      <div class="hm-field"><label>Email</label><input type="email" id="hm-email-rec" placeholder="tu@email.com" autocomplete="email"></div>
-      <button class="hm-submit" onclick="enviarRecuperar()">Enviar email</button>
-      <div id="hm-msg-rec" class="modal-msg" style="display:none"></div>
-      <div class="hm-link"><a onclick="abrirModal('login')">&#8592; Volver</a></div>
     </div>
   </div>
 </div>
