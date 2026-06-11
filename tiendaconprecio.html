@@ -665,6 +665,7 @@ async function enviarPedido(){
       cajas: item.qty,
       uds_caja: p.upc||0,
       peso_medio: p.peso||0,
+      grupo_iva: p.grupo_iva||1,
       precio_ud: precioNum.toFixed(2).replace('.',','),
       subtotal: sub.toFixed(2).replace('.',','),
       estimado: _esEstimado(p)
