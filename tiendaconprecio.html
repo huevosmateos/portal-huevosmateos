@@ -513,7 +513,7 @@ window.addEventListener('resize',function(){
   <div class="cart-items" id="cart-items"><p class="cart-vacio">El carrito est&#225; vac&#237;o</p></div>
   <div class="cart-foot">
     <div class="cart-total"><strong>Total</strong><span class="cart-total-val" id="cart-total-val">0,00 &#8364;</span></div>
-    <button class="cart-btn-pedido" onclick="enviarPedido()">&#128231; Enviar pedido por email</button>
+    <button class="cart-btn-pedido" id="btn-confirmar-pedido" onclick="enviarPedido()">&#10003; Confirmar Pedido</button>
     <button class="cart-btn-vaciar" onclick="vaciarCarrito()">Vaciar carrito</button>
   </div>
 </div>
@@ -622,17 +622,79 @@ function vaciarCarrito(){
   _carrito={};_csave();_cbadge();_renderCarrito();_cardSyncAll();
 }
 
-function enviarPedido(){
+async function enviarPedido(){
   var keys=Object.keys(_carrito);
   if(!keys.length){alert('El carrito está vacío.');return;}
-  var lineas=[];var total=0;
+
+  var btn=document.getElementById('btn-confirmar-pedido');
+  btn.disabled=true; btn.textContent='Enviando...';
+
+  var lineas=[]; var total=0;
   keys.forEach(function(cod){
-    var item=_carrito[cod];var sub=_subtotal(item.p,item.qty);total+=sub;
-    var est=_esEstimado(item.p)?'~':'';
-    lineas.push(item.qty+' x '+item.p.nombre+' ('+item.p.codigo+') ['+item.p.envase+'] - '+est+sub.toFixed(2).replace('.',',')+' EUR');
+    var item=_carrito[cod]; var p=item.p;
+    var sub=_subtotal(p,item.qty); total+=sub;
+    var precioNum=_precioNum(p);
+    lineas.push({
+      codigo: p.codigo,
+      nombre: p.nombre,
+      envase: p.envase||'',
+      cajas: item.qty,
+      precio_ud: precioNum.toFixed(2).replace('.',','),
+      subtotal: sub.toFixed(2).replace('.',','),
+      estimado: _esEstimado(p)
+    });
   });
-  var cuerpo='PEDIDO PORTAL B2B\n\n'+(_sbEmail?('Cliente: '+_sbEmail+'\n\n'):'')+lineas.join('\n')+'\n\nTOTAL: '+total.toFixed(2).replace('.',',')+' EUR';
-  window.location.href='mailto:correo@huevosmateos.es?subject='+encodeURIComponent('Pedido Portal B2B')+'&body='+encodeURIComponent(cuerpo);
+
+  var totalStr=total.toFixed(2).replace('.',',');
+
+  try {
+    // 1. Guardar pedido en Supabase
+    var ins=await sb.from('pedidos').insert({
+      cliente_email: _sbEmail,
+      cliente_codigo: _clienteCod||'',
+      lineas: lineas,
+      total: total
+    }).select('id').single();
+
+    if(ins.error) throw new Error(ins.error.message);
+    var pedido_id=ins.data.id;
+
+    // 2. Llamar a la Edge Function para enviar emails
+    var sess=await sb.auth.getSession();
+    var token=sess.data.session.access_token;
+    var res=await fetch(
+      'https://pkwttturncewwdlpxrxz.supabase.co/functions/v1/enviar-pedido',
+      {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':'Bearer '+token
+        },
+        body: JSON.stringify({
+          pedido_id: pedido_id,
+          cliente_email: _sbEmail,
+          cliente_codigo: _clienteCod||'',
+          lineas: lineas,
+          total: totalStr
+        })
+      }
+    );
+    if(!res.ok) throw new Error('Error al enviar emails');
+
+    // 3. Vaciar carrito y mostrar confirmación
+    vaciarCarrito();
+    cerrarCarrito();
+    var aviso=document.createElement('div');
+    aviso.style.cssText='position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a7a4a;color:#fff;padding:18px 32px;border-radius:10px;font-size:15px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);text-align:center;max-width:90%';
+    aviso.textContent='\u2713 Pedido n\u00ba '+pedido_id+' confirmado. Recibir\u00e1s un email con el resumen.';
+    document.body.appendChild(aviso);
+    setTimeout(function(){aviso.remove();},6000);
+
+  } catch(e) {
+    alert('Error al confirmar el pedido: '+e.message+'\nInt\u00e9ntalo de nuevo o ll\u00e1manos al 927 415 311.');
+  }
+
+  btn.disabled=false; btn.textContent='\u2713 Confirmar Pedido';
 }
 
 /* Carga inicial del carrito guardado en la sesion y actualiza contador y botones */
