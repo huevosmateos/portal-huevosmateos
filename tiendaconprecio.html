@@ -686,7 +686,7 @@ async function enviarPedido(){
     cerrarCarrito();
     var aviso=document.createElement('div');
     aviso.style.cssText='position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a7a4a;color:#fff;padding:18px 32px;border-radius:10px;font-size:15px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);text-align:center;max-width:90%';
-    aviso.textContent='\u2713 Pedido n\u00ba '+pedido_id+' confirmado. Recibir\u00e1s un email con el resumen.';
+    aviso.textContent='\u2713 Pedido confirmado. Recibirás un email con el resumen.';
     document.body.appendChild(aviso);
     setTimeout(function(){aviso.remove();},6000);
 
