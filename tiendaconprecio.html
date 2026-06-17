@@ -226,7 +226,7 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 <body>
 <div class="app">
 <header class="top"><div class="top-inner">
-  <a href="index.html" class="logo"><img src="assets/logo.bmp" alt="Huevos Mateos" class="logo-img"></a>
+  <a href="index.html" class="logo" onclick="return _navGuard(event,'index.html')"><img src="assets/logo.bmp" alt="Huevos Mateos" class="logo-img"></a>
   <div class="top-info"><span class="tel">Llamanos: <b>927 415 311</b><br><span style="padding-left:6.8em"><b>639 75 55 93</b></span></span></div>
   <div class="top-right">
     <div id="nav-login-widget"></div>
@@ -234,9 +234,9 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
   </div>
 </div></header>
 <nav class="nav"><div class="nav-inner">
-  <a href="index.html">Inicio</a>
-  <a href="tienda.html" class="activo">Tienda</a>
-  <a href="contacto.html">Contacto</a>
+  <a href="index.html" onclick="return _navGuard(event,'index.html')">Inicio</a>
+  <a href="tienda.html" class="activo" onclick="return _navGuard(event,'tienda.html')">Tienda</a>
+  <a href="contacto.html" onclick="return _navGuard(event,'contacto.html')">Contacto</a>
   <div class="nav-buscador"><input id="q" type="search" placeholder="Buscar en el catalogo..."></div>
   <button id="btn-hab" type="button" onclick="mostrarHabituales()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);padding:6px 28px;border-radius:6px;font-size:13px;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:8px;min-width:220px">&#9733; Ver Productos Habituales</button>
 </div></nav>
@@ -495,9 +495,9 @@ window.addEventListener('resize',function(){
     <div class="pie-info-block">
       <h4>Informacion</h4>
       <ul>
-        <li><a href="index.html">Inicio</a></li>
-        <li><a href="tienda.html">Tienda</a></li>
-        <li><a href="contacto.html">Contacto</a></li>
+        <li><a href="index.html" onclick="return _navGuard(event,'index.html')">Inicio</a></li>
+        <li><a href="tienda.html" onclick="return _navGuard(event,'tienda.html')">Tienda</a></li>
+        <li><a href="contacto.html" onclick="return _navGuard(event,'contacto.html')">Contacto</a></li>
       </ul>
     </div>
   </div>
@@ -746,4 +746,95 @@ async function enviarPedido(){
   <svg viewBox="0 0 32 32"><path d="M16.001 2.667c-7.364 0-13.334 5.97-13.334 13.333 0 2.45.665 4.74 1.823 6.71l-1.93 7.044a1 1 0 0 0 1.224 1.224l7.045-1.93a13.27 13.27 0 0 0 5.172 1.045c7.364 0 13.334-5.97 13.334-13.333S23.365 2.667 16.001 2.667zm6.36 18.96c-.295.832-1.46 1.527-2.36 1.71-.63.127-1.45.228-4.21-.905-3.53-1.452-5.8-4.99-5.98-5.225-.176-.236-1.43-1.9-1.43-3.625s.9-2.575 1.22-2.93c.32-.355.7-.443.93-.443.235 0 .47.002.675.013.217.012.51-.083.798.61.295.71 1 2.448 1.09 2.625.09.176.15.385.03.617-.118.232-.178.376-.353.578-.176.2-.37.448-.53.6-.176.176-.36.367-.155.715.207.353.92 1.518 1.97 2.46 1.357 1.21 2.502 1.59 2.866 1.766.295.143.47.12.643-.072.205-.227.86-1 1.09-1.343.23-.343.46-.286.78-.172.32.114 2.03.957 2.378 1.13.348.176.578.265.663.41.087.146.087.84-.21 1.673z"/></svg>
 </a>
 
+<!-- Modal aviso carrito pendiente -->
+<div id="nav-guard-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:32px 28px;max-width:400px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2)">
+    <div style="font-size:36px;margin-bottom:12px">🛒</div>
+    <h3 style="color:#0d0190;margin:0 0 10px;font-family:'Fraunces',serif">Tienes un pedido sin enviar</h3>
+    <p style="color:#6b6b78;font-size:14px;margin:0 0 24px">¿Deseas confirmar el pedido antes de salir?</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button onclick="_navGuardConfirmar()" style="background:#0d0190;color:#fff;border:none;padding:13px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">✓ Confirmar pedido</button>
+      <button onclick="_navGuardSegundo()" style="background:#fff;color:#c0392b;border:2px solid #c0392b;padding:11px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">No, salir sin enviar</button>
+      <button onclick="_navGuardCancelar()" style="background:none;border:none;color:#6b6b78;font-size:13px;cursor:pointer;padding:4px;font-family:inherit">Volver a la tienda</button>
+    </div>
+  </div>
+</div>
+
+<div id="nav-guard-modal2" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:32px 28px;max-width:400px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2)">
+    <div style="font-size:36px;margin-bottom:12px">⚠️</div>
+    <h3 style="color:#c0392b;margin:0 0 10px;font-family:'Fraunces',serif">El pedido se eliminará</h3>
+    <p style="color:#6b6b78;font-size:14px;margin:0 0 24px">Si sales ahora perderás todos los productos del carrito. ¿Seguro que quieres salir?</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button onclick="_navGuardSalir()" style="background:#c0392b;color:#fff;border:none;padding:13px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Sí, salir y eliminar pedido</button>
+      <button onclick="_navGuardCancelar()" style="background:none;border:none;color:#6b6b78;font-size:13px;cursor:pointer;padding:4px;font-family:inherit">Volver a la tienda</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var _navGuardDestino = null;
+
+function _carritoTieneItems(){
+  return Object.keys(_carrito||{}).length > 0;
+}
+
+function _navGuard(e, destino){
+  if(!_carritoTieneItems()) return true; // sin carrito, navegar libremente
+  e.preventDefault();
+  _navGuardDestino = destino;
+  document.getElementById('nav-guard-modal').style.display = 'flex';
+  return false;
+}
+
+function _navGuardConfirmar(){
+  // Cerrar modal y lanzar confirmación de pedido
+  document.getElementById('nav-guard-modal').style.display = 'none';
+  _navGuardDestino = null;
+  enviarPedido();
+}
+
+function _navGuardSegundo(){
+  // Mostrar segundo aviso
+  document.getElementById('nav-guard-modal').style.display = 'none';
+  document.getElementById('nav-guard-modal2').style.display = 'flex';
+}
+
+function _navGuardSalir(){
+  document.getElementById('nav-guard-modal2').style.display = 'none';
+  if(_navGuardDestino){
+    // Navegación a enlace concreto: vaciamos carrito y navegamos
+    vaciarCarrito();
+    location.href = _navGuardDestino;
+  } else {
+    // Botón atrás: simplemente dejamos ir sin vaciar, el carrito se pierde al cambiar de página
+    window.removeEventListener('beforeunload', _beforeUnloadHandler);
+    history.back();
+  }
+}
+
+function _navGuardCancelar(){
+  document.getElementById('nav-guard-modal').style.display = 'none';
+  document.getElementById('nav-guard-modal2').style.display = 'none';
+  _navGuardDestino = null;
+}
+
+function _beforeUnloadHandler(e){
+  if(_carritoTieneItems()){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+}
+window.addEventListener('beforeunload', _beforeUnloadHandler);
+
+// Interceptar botón atrás con History API para mostrar modal propio
+history.pushState(null, '', location.href);
+window.addEventListener('popstate', function(){
+  if(_carritoTieneItems()){
+    history.pushState(null, '', location.href); // volver a empujar para seguir interceptando
+    _navGuardDestino = null; // sin destino concreto, el salir cerrará o quedará en la página
+    document.getElementById('nav-guard-modal').style.display = 'flex';
+  }
+});
+</script>
 </body></html>
