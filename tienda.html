@@ -340,14 +340,14 @@ async function comprobarEmail(){
   }
 
   if(chk.data === 'no_autorizado'){
-    // Existe pero no habilitado -> formulario de alta con aviso
-    document.getElementById('hm-altanuevo-email').value = email;
-    document.getElementById('hm-alta-titulo').textContent = 'Acceso no activado';
-    document.getElementById('hm-alta-desc').textContent = 'Tu cuenta existe pero no está activada todavía. Déjanos tus datos y nos pondremos en contacto contigo.';
-    document.getElementById('hm-altanuevo-nombre').value = '';
-    document.getElementById('hm-altanuevo-tel').value = '';
-    document.getElementById('hm-msg-altanuevo').style.display = 'none';
-    _mostrarPanel('altanuevo', true);
+    // Cliente habitual pero sin autorizar todavía -> avisar al admin automáticamente
+    var pedirBtn = btn;
+    pedirBtn.disabled = true; pedirBtn.textContent = 'Enviando solicitud...';
+    var sol = await sb.rpc('solicitar_autorizacion_cliente', {p_email: email});
+    pedirBtn.disabled = false; pedirBtn.textContent = 'Continuar';
+
+    document.getElementById('hm-msg-pendiente').style.display = 'block';
+    _mostrarPanel('pendiente', true);
     return;
   }
 
@@ -676,6 +676,16 @@ window.addEventListener('resize',function(){
       <div class="hm-field"><label>Teléfono</label><input type="tel" id="hm-altanuevo-tel" placeholder="Ej: 654321789" maxlength="15" inputmode="tel"></div>
       <button id="hm-btn-altanuevo" class="hm-submit" onclick="enviarAltaNueva()">Enviar solicitud</button>
       <div id="hm-msg-altanuevo" class="modal-msg" style="display:none"></div>
+    </div>
+
+    <!-- PASO 2d: Cliente conocido pero pendiente de autorización -->
+    <div id="hm-panel-pendiente" class="hm-panel" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <button onclick="volverAEmail()" style="background:none;border:none;cursor:pointer;color:var(--gris);font-size:20px;padding:0;line-height:1">&#8592;</button>
+        <h3 style="color:var(--azul);margin:0">Solicitud enviada</h3>
+      </div>
+      <p style="font-size:14px;color:var(--gris);margin:0 0 20px">Hemos avisado al administrador para que active tu acceso. Te enviaremos un email en cuanto esté autorizado.</p>
+      <div id="hm-msg-pendiente" class="modal-msg ok" style="display:none">✓ Solicitud enviada correctamente.</div>
     </div>
 
     <!-- PASO 2c: Recuperar contraseña -->
