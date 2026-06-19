@@ -416,7 +416,23 @@ async function enviarRecuperar(){
   msg.style.display = 'none';
   if(!email){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Introduce tu email.'; return; }
   var btn = document.getElementById('hm-btn-rec');
-  btn.disabled = true; btn.textContent = 'Enviando...';
+  btn.disabled = true; btn.textContent = 'Comprobando...';
+
+  // Comprobar que el email ya confirmó su alta antes de permitir recuperar contraseña
+  var conf = await sb.rpc('email_confirmado', {p_email: email});
+  if(conf.error){
+    btn.disabled = false; btn.textContent = 'Enviar email';
+    msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Error al consultar. Inténtalo de nuevo.';
+    return;
+  }
+  if(conf.data !== true){
+    btn.disabled = false; btn.textContent = 'Enviar email';
+    msg.className='modal-msg err'; msg.style.display='block';
+    msg.textContent='Tu cuenta todavía no está verificada. Revisa tu buzón y confirma el email de alta antes de recuperar la contraseña.';
+    return;
+  }
+
+  btn.textContent = 'Enviando...';
   var res = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://huevosmateos.github.io/portal-huevosmateos/tienda.html'
   });
