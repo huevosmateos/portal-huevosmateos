@@ -6,7 +6,7 @@
   .box{background:#fff;border-radius:12px;padding:36px 32px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.08)}
   h2{margin:0 0 12px}
   p{color:#555;font-size:15px;line-height:1.5}
-  .btn{display:inline-block;background:#0d0190;color:#fff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:16px}
+  .btn{display:inline-block;background:#0d0190;color:#fff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:16px;border:none;cursor:pointer;font-size:15px;font-family:Arial,sans-serif}
 </style></head>
 <body>
 <div class="box" id="box">Cargando...</div>
@@ -20,6 +20,15 @@ function render(titulo, color, mensaje, boton) {
   box.innerHTML = `<h2 style="color:${color}">${titulo}</h2><p>${mensaje}</p>${boton || ""}`;
 }
 
+function cerrarVentana() {
+  window.close();
+  setTimeout(function() {
+    if (!window.closed) {
+      history.back();
+    }
+  }, 200);
+}
+
 if (status === "confirmar") {
   const token = params.get("token");
   const codigo = params.get("codigo");
@@ -30,7 +39,8 @@ if (status === "confirmar") {
     `<a href="${urlSi}" class="btn">Sí, autorizar</a>`);
 } else if (status === "ok") {
   render("Cliente autorizado", "#1a7a4a",
-    `El cliente <strong>${params.get("codigo")}</strong> ya puede acceder al portal. Se le ha enviado un email para que cree su contraseña.`);
+    `El cliente <strong>${params.get("codigo")}</strong> ya puede acceder al portal. Se le ha enviado un email para que cree su contraseña.`,
+    `<button onclick="cerrarVentana()" class="btn">Aceptar</button>`);
 } else if (status === "usado") {
   render("Ya procesado", "#888", "Este cliente ya fue autorizado anteriormente con este enlace.");
 } else if (status === "caducado") {
