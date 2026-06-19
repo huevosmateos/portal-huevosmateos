@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Autorización de cliente</title>
+<style>
+  body{font-family:Arial,sans-serif;background:#f4f4f7;margin:0;padding:40px 20px;display:flex;justify-content:center}
+  .box{background:#fff;border-radius:12px;padding:36px 32px;max-width:440px;width:100%;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+  h2{margin:0 0 12px}
+  p{color:#555;font-size:15px;line-height:1.5}
+  .btn{display:inline-block;background:#0d0190;color:#fff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:16px}
+</style></head>
+<body>
+<div class="box" id="box">Cargando...</div>
+<script>
+const BASE_URL = "https://pkwttturncewwdlpxrxz.supabase.co/functions/v1/autorizar-cliente";
+const params = new URLSearchParams(window.location.search);
+const status = params.get("status");
+const box = document.getElementById("box");
+
+function render(titulo, color, mensaje, boton) {
+  box.innerHTML = `<h2 style="color:${color}">${titulo}</h2><p>${mensaje}</p>${boton || ""}`;
+}
+
+if (status === "confirmar") {
+  const token = params.get("token");
+  const codigo = params.get("codigo");
+  const email = params.get("email");
+  const urlSi = `${BASE_URL}?token=${encodeURIComponent(token)}&accion=autorizar`;
+  render("Confirmar autorización", "#0d0190",
+    `¿Confirmas que quieres autorizar el acceso al cliente con código <strong>${codigo}</strong> (${email}) al portal B2B?`,
+    `<a href="${urlSi}" class="btn">Sí, autorizar</a>`);
+} else if (status === "ok") {
+  render("Cliente autorizado", "#1a7a4a",
+    `El cliente <strong>${params.get("codigo")}</strong> ya puede acceder al portal. Se le ha enviado un email para que cree su contraseña.`);
+} else if (status === "usado") {
+  render("Ya procesado", "#888", "Este cliente ya fue autorizado anteriormente con este enlace.");
+} else if (status === "caducado") {
+  render("Enlace caducado", "#c0392b", "Este enlace de autorización caducó (válido 3 días). Pide al cliente que vuelva a intentar entrar para generar uno nuevo.");
+} else if (status === "error") {
+  render("Error", "#c0392b", "No se pudo autorizar al cliente: " + (params.get("msg") || ""));
+} else {
+  render("Enlace no válido", "#c0392b", "Este enlace de autorización no existe o ya fue procesado.");
+}
+</script>
+</body></html>
