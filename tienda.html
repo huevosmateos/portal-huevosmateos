@@ -315,9 +315,27 @@ async function comprobarEmail(){
   }
 
   if(chk.data === 'autorizado'){
-    // Email existe y está habilitado -> pedir contraseña
+    // Email autorizado -> comprobar si ya tiene cuenta creada (contraseña)
+    var existeBtn = btn;
+    existeBtn.disabled = true; existeBtn.textContent = 'Comprobando...';
+    var existe = await sb.rpc('existe_usuario_auth', {p_email: email});
+    existeBtn.disabled = false; existeBtn.textContent = 'Continuar';
+
+    if(existe.error){
+      msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Error al consultar. Inténtalo de nuevo.';
+      return;
+    }
+
     document.getElementById('hm-email-display').textContent = email;
-    mostrarPass();
+
+    if(existe.data === true){
+      // Ya tiene cuenta -> pedir contraseña normal
+      mostrarPass();
+    } else {
+      // Primer acceso: crear el usuario y pasar a crear contraseña
+      document.getElementById('hm-email-nuevo').value = email;
+      _mostrarPanel('crearpass', true);
+    }
     return;
   }
 
@@ -422,7 +440,24 @@ async function guardarContrasena(){
   if(p1!==p2){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Las contraseñas no coinciden.'; return; }
   var btn = document.getElementById('hm-btn-crearpass');
   btn.disabled = true; btn.textContent = 'Guardando...';
-  var res = await sb.auth.updateUser({ password: p1, data: { has_password: true } });
+
+  var sess = await sb.auth.getSession();
+  var hayUsuario = sess.data && sess.data.session && sess.data.session.user;
+  var res;
+
+  if(hayUsuario){
+    // Caso recovery: ya hay sesión activa, solo actualizar contraseña
+    res = await sb.auth.updateUser({ password: p1, data: { has_password: true } });
+  } else {
+    // Caso primer acceso: crear el usuario desde cero
+    var emailNuevo = document.getElementById('hm-email-nuevo').value.trim().toLowerCase();
+    res = await sb.auth.signUp({
+      email: emailNuevo,
+      password: p1,
+      options: { data: { has_password: true } }
+    });
+  }
+
   if(res.error){
     msg.className='modal-msg err'; msg.style.display='block'; msg.textContent=res.error.message||'Error al guardar.';
     btn.disabled = false; btn.textContent = 'Guardar contraseña';
@@ -430,7 +465,7 @@ async function guardarContrasena(){
   }
   msg.className='modal-msg ok'; msg.style.display='block';
   msg.textContent='¡Contraseña guardada! Accediendo...';
-  // La sesión ya es válida tras updateUser, redirigir directamente
+  // La sesión ya es válida tras signUp/updateUser, redirigir directamente
   setTimeout(function(){ location.replace('tiendaconprecio.html'); }, 1500);
 }
 // — fin auth —
@@ -635,6 +670,7 @@ window.addEventListener('resize',function(){
     <div id="hm-panel-crearpass" class="hm-panel" style="display:none">
       <h3 style="color:var(--azul);margin:0 0 8px">¡Bienvenido!</h3>
       <p style="font-size:14px;color:var(--gris);margin:0 0 20px">Para acceder en el futuro, crea una contraseña segura.</p>
+      <input type="hidden" id="hm-email-nuevo">
       <div class="hm-field"><label>Nueva contraseña</label><div class="hm-pass-wrap"><input type="password" id="hm-newpass1" placeholder="Mínimo 6 caracteres"><button class="hm-pass-toggle" onclick="togglePass('hm-newpass1')" type="button">&#128065;</button></div></div>
       <div class="hm-field"><label>Repite la contraseña</label><div class="hm-pass-wrap"><input type="password" id="hm-newpass2" placeholder="Repite la contraseña"><button class="hm-pass-toggle" onclick="togglePass('hm-newpass2')" type="button">&#128065;</button></div></div>
       <button id="hm-btn-crearpass" class="hm-submit" onclick="guardarContrasena()">Guardar contraseña</button>
