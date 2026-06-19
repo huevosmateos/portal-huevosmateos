@@ -463,10 +463,18 @@ async function guardarContrasena(){
     btn.disabled = false; btn.textContent = 'Guardar contraseña';
     return;
   }
-  msg.className='modal-msg ok'; msg.style.display='block';
-  msg.textContent='¡Contraseña guardada! Accediendo...';
-  // La sesión ya es válida tras signUp/updateUser, redirigir directamente
-  setTimeout(function(){ location.replace('tiendaconprecio.html'); }, 1500);
+
+  if(hayUsuario){
+    // Recovery: sesión ya confirmada, redirigir directamente
+    msg.className='modal-msg ok'; msg.style.display='block';
+    msg.textContent='¡Contraseña guardada! Accediendo...';
+    setTimeout(function(){ location.replace('tiendaconprecio.html'); }, 1500);
+  } else {
+    // Primer acceso: Supabase exige confirmar el email antes de poder entrar
+    msg.className='modal-msg ok'; msg.style.display='block';
+    msg.textContent='✓ Contraseña creada. Te hemos enviado un email de verificación. Confírmalo desde tu buzón para poder acceder al portal.';
+    btn.disabled = true; btn.textContent = 'Guardar contraseña';
+  }
 }
 // — fin auth —
 function tarjeta(p){
