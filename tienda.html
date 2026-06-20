@@ -394,7 +394,11 @@ async function intentarLogin(){
   btn.disabled = true; btn.textContent = 'Entrando...';
   var res = await sb.auth.signInWithPassword({email: email, password: pass});
   if(res.error){
-    msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Contraseña incorrecta. Inténtalo de nuevo.';
+    var textoError = 'Contraseña incorrecta. Inténtalo de nuevo.';
+    if(res.error.message && /confirm/i.test(res.error.message)){
+      textoError = 'Tu cuenta todavía no está verificada. Revisa tu buzón de correo y confirma tu email antes de poder entrar.';
+    }
+    msg.className='modal-msg err'; msg.style.display='block'; msg.textContent=textoError;
     btn.disabled = false; btn.textContent = 'Entrar';
   }
   // Si no hay error, onAuthStateChange redirige a tiendaconprecio
@@ -524,7 +528,7 @@ function recordarCredenciales(btn){
   localStorage.setItem('hm_rec_pass', window.hmTempCred.pass);
   var msg = document.getElementById('hm-msg-crearpass');
   if(msg){ msg.innerHTML = '✓ Revisa tu correo para verificar tu email.'; }
-  setTimeout(function(){ cerrarModal(); }, 1500);
+  setTimeout(function(){ cerrarModal(); }, 4000);
 }
 // — fin auth —
 function tarjeta(p){
