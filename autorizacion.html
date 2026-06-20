@@ -41,6 +41,10 @@ if (status === "confirmar") {
   render("Cliente autorizado", "#1a7a4a",
     `El cliente <strong>${params.get("codigo")}</strong> ya puede acceder al portal. Se le ha enviado un email para que cree su contraseña.`,
     `<button onclick="cerrarVentana()" class="btn">Aceptar</button>`);
+} else if (status === "alta_ok") {
+  render("Cuenta verificada", "#1a7a4a",
+    `Tu email ha sido verificado y tu cuenta ya está activa. Ya puedes acceder al portal con tu email y tu contraseña.`,
+    `<a href="https://huevosmateos.github.io/portal-huevosmateos/tienda.html" class="btn">Ir al portal</a>`);
 } else if (status === "usado") {
   render("Ya procesado", "#888", "Este cliente ya fue autorizado anteriormente con este enlace.");
 } else if (status === "caducado") {
