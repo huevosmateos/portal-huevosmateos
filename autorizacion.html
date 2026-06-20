@@ -29,7 +29,7 @@ function cerrarVentana() {
   window.close();
   setTimeout(function() {
     if (!window.closed) {
-      history.back();
+      box.innerHTML = '<h2 style="color:#1a7a4a">Listo</h2><p>Ya puedes cerrar esta pestaña.</p>';
     }
   }, 200);
 }
