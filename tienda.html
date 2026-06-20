@@ -517,7 +517,7 @@ async function guardarContrasena(){
     window.hmTempCred = {email: emailNuevo, pass: p1};
     msg.className='modal-msg ok'; msg.style.display='block';
     msg.innerHTML = '✓ Contraseña creada. Te hemos enviado un email de verificación. Confírmalo desde tu buzón para poder acceder al portal.<br><button type="button" class="hm-submit" style="margin-top:14px" onclick="recordarCredenciales(this)">Recordar contraseña</button>';
-    btn.disabled = true; btn.textContent = 'Guardar contraseña';
+    btn.style.display = 'none';
   }
 }
 
@@ -525,7 +525,9 @@ function recordarCredenciales(btn){
   if(!window.hmTempCred) return;
   localStorage.setItem('hm_rec_email', window.hmTempCred.email);
   localStorage.setItem('hm_rec_pass', window.hmTempCred.pass);
-  if(btn){ btn.textContent = '✓ Recordado'; btn.disabled = true; }
+  var msg = document.getElementById('hm-msg-crearpass');
+  if(msg){ msg.innerHTML = '✓ Revisa tu correo para verificar tu email.'; }
+  setTimeout(function(){ cerrarModal(); }, 1500);
 }
 // — fin auth —
 function tarjeta(p){
