@@ -486,39 +486,36 @@ async function guardarContrasena(){
 
   var sess = await sb.auth.getSession();
   var hayUsuario = sess.data && sess.data.session && sess.data.session.user;
-  var res;
 
   if(hayUsuario){
-    // Caso recovery: ya hay sesión activa, solo actualizar contraseña
-    res = await sb.auth.updateUser({ password: p1, data: { has_password: true } });
-  } else {
-    // Caso primer acceso: crear el usuario desde cero
-    var emailNuevo = document.getElementById('hm-email-nuevo').value.trim().toLowerCase();
-    res = await sb.auth.signUp({
-      email: emailNuevo,
-      password: p1,
-      options: { data: { has_password: true } }
-    });
+    // Caso recovery: ya hay sesión activa (cuenta ya verificada), solo actualizar contraseña
+    var res = await sb.auth.updateUser({ password: p1, data: { has_password: true } });
+    if(res.error){
+      msg.className='modal-msg err'; msg.style.display='block'; msg.textContent=res.error.message||'Error al guardar.';
+      btn.disabled = false; btn.textContent = 'Guardar contraseña';
+      return;
+    }
+    msg.className='modal-msg ok'; msg.style.display='block';
+    msg.textContent='¡Contraseña guardada! Accediendo...';
+    setTimeout(function(){ location.replace('tiendaconprecio.html'); }, 1500);
+    return;
   }
 
-  if(res.error){
-    msg.className='modal-msg err'; msg.style.display='block'; msg.textContent=res.error.message||'Error al guardar.';
+  // Caso primer acceso: NO se crea el usuario en Supabase Auth todavía.
+  // Se manda un email de verificación y solo al confirmarlo se da de alta la cuenta.
+  var emailNuevo = document.getElementById('hm-email-nuevo').value.trim().toLowerCase();
+  var res2 = await sb.rpc('solicitar_alta_con_verificacion', { p_email: emailNuevo, p_password: p1 });
+
+  if(res2.error){
+    msg.className='modal-msg err'; msg.style.display='block'; msg.textContent=res2.error.message||'Error al guardar.';
     btn.disabled = false; btn.textContent = 'Guardar contraseña';
     return;
   }
 
-  if(hayUsuario){
-    // Recovery: sesión ya confirmada, redirigir directamente
-    msg.className='modal-msg ok'; msg.style.display='block';
-    msg.textContent='¡Contraseña guardada! Accediendo...';
-    setTimeout(function(){ location.replace('tiendaconprecio.html'); }, 1500);
-  } else {
-    // Primer acceso: Supabase exige confirmar el email antes de poder entrar
-    window.hmTempCred = {email: emailNuevo, pass: p1};
-    msg.className='modal-msg ok'; msg.style.display='block';
-    msg.innerHTML = '✓ Contraseña creada. Te hemos enviado un email de verificación. Confírmalo desde tu buzón para poder acceder al portal.<br><button type="button" class="hm-submit" style="margin-top:14px" onclick="recordarCredenciales(this)">Recordar contraseña</button>';
-    btn.style.display = 'none';
-  }
+  window.hmTempCred = {email: emailNuevo, pass: p1};
+  msg.className='modal-msg ok'; msg.style.display='block';
+  msg.innerHTML = '✓ Te hemos enviado un email de verificación. Confírmalo desde tu buzón para activar tu cuenta y poder acceder al portal.<br><button type="button" class="hm-submit" style="margin-top:14px" onclick="recordarCredenciales(this)">Recordar contraseña</button>';
+  btn.style.display = 'none';
 }
 
 function recordarCredenciales(btn){
