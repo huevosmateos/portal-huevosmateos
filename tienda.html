@@ -103,7 +103,8 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 .nav-btn-acceso{background:var(--yema);color:#1d1d27;border:0;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 .nav-btn-acceso:hover{background:#e0a400}
 .hm-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:center;justify-content:center}
-.hm-box{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:420px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.hm-box{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:420px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.25);transition:transform .25s ease}
+.hm-box.hm-subir{transform:translateY(-1.5cm)}
 .hm-close{position:absolute;top:14px;right:18px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--gris)}
 .hm-tabs{display:flex;border-bottom:2px solid var(--linea);margin-bottom:24px}
 .hm-tab{flex:1;background:none;border:none;padding:10px;font-size:14px;font-weight:600;cursor:pointer;color:var(--gris);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit}
@@ -280,6 +281,11 @@ function _mostrarPanel(panel, cerrable){
   if(pp) pp.style.display = 'block';
   var btn = document.getElementById('hm-close-btn');
   if(btn) btn.style.display = cerrable ? 'block' : 'none';
+  var box = document.querySelector('.hm-box');
+  if(box){
+    if(panel==='pass' || panel==='crearpass'){ box.classList.add('hm-subir'); }
+    else { box.classList.remove('hm-subir'); }
+  }
 }
 function volverAEmail(){
   _mostrarPanel('email', true);
@@ -452,7 +458,11 @@ async function guardarContrasena(){
   var p1 = document.getElementById('hm-newpass1').value;
   var p2 = document.getElementById('hm-newpass2').value;
   var msg = document.getElementById('hm-msg-crearpass');
-  if(!p1||p1.length<6){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='La contraseña debe tener al menos 6 caracteres.'; return; }
+  if(!p1||p1.length<8){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='La contraseña debe tener al menos 8 caracteres.'; return; }
+  if(!/[A-Z]/.test(p1)){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='La contraseña debe contener al menos una mayúscula.'; return; }
+  if(!/[a-z]/.test(p1)){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='La contraseña debe contener al menos una minúscula.'; return; }
+  if(!/[0-9]/.test(p1)){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='La contraseña debe contener al menos un número.'; return; }
+  if(!/[!"$%&]/.test(p1)){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='La contraseña debe contener al menos un carácter especial (!"$%&).'; return; }
   if(p1!==p2){ msg.className='modal-msg err'; msg.style.display='block'; msg.textContent='Las contraseñas no coinciden.'; return; }
   var btn = document.getElementById('hm-btn-crearpass');
   btn.disabled = true; btn.textContent = 'Guardando...';
@@ -703,9 +713,9 @@ window.addEventListener('resize',function(){
     <!-- CREAR CONTRASEÑA (primer acceso vía magic link) -->
     <div id="hm-panel-crearpass" class="hm-panel" style="display:none">
       <h3 style="color:var(--azul);margin:0 0 8px">¡Bienvenido!</h3>
-      <p style="font-size:14px;color:var(--gris);margin:0 0 20px">Para acceder en el futuro, crea una contraseña segura.</p>
+      <p style="font-size:14px;color:var(--gris);margin:0 0 20px">Cree una contraseña de 8 caracteres. Debe contener mayúscula, minúscula, número y carácter especial (!"$%&amp;).</p>
       <input type="hidden" id="hm-email-nuevo">
-      <div class="hm-field"><label>Nueva contraseña</label><div class="hm-pass-wrap"><input type="password" id="hm-newpass1" placeholder="Mínimo 6 caracteres"><button class="hm-pass-toggle" onclick="togglePass('hm-newpass1')" type="button">&#128065;</button></div></div>
+      <div class="hm-field"><label>Nueva contraseña</label><div class="hm-pass-wrap"><input type="password" id="hm-newpass1" placeholder="Mínimo 8 caracteres"><button class="hm-pass-toggle" onclick="togglePass('hm-newpass1')" type="button">&#128065;</button></div></div>
       <div class="hm-field"><label>Repite la contraseña</label><div class="hm-pass-wrap"><input type="password" id="hm-newpass2" placeholder="Repite la contraseña"><button class="hm-pass-toggle" onclick="togglePass('hm-newpass2')" type="button">&#128065;</button></div></div>
       <button id="hm-btn-crearpass" class="hm-submit" onclick="guardarContrasena()">Guardar contraseña</button>
       <div id="hm-msg-crearpass" class="modal-msg" style="display:none"></div>
