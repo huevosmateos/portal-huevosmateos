@@ -105,6 +105,7 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 .hm-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:center;justify-content:center}
 .hm-box{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:420px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.25);transition:transform .25s ease}
 .hm-box.hm-subir{transform:translateY(-1.5cm)}
+.hm-box.hm-subir-mas{transform:translateY(-2.5cm)}
 .hm-close{position:absolute;top:14px;right:18px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--gris)}
 .hm-tabs{display:flex;border-bottom:2px solid var(--linea);margin-bottom:24px}
 .hm-tab{flex:1;background:none;border:none;padding:10px;font-size:14px;font-weight:600;cursor:pointer;color:var(--gris);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit}
@@ -264,6 +265,8 @@ function mostrarLoginWidget(){
 function abrirLogin(){
   document.getElementById('hm-modal').style.display = 'flex';
   _mostrarPanel('email', true);
+  var recEmail = localStorage.getItem('hm_rec_email');
+  if(recEmail){ var elE = document.getElementById('hm-email'); if(elE) elE.value = recEmail; }
   setTimeout(function(){ var el=document.getElementById('hm-email'); if(el) el.focus(); }, 50);
 }
 function cerrarModal(){
@@ -283,8 +286,9 @@ function _mostrarPanel(panel, cerrable){
   if(btn) btn.style.display = cerrable ? 'block' : 'none';
   var box = document.querySelector('.hm-box');
   if(box){
-    if(panel==='pass' || panel==='crearpass'){ box.classList.add('hm-subir'); }
-    else { box.classList.remove('hm-subir'); }
+    box.classList.remove('hm-subir','hm-subir-mas');
+    if(panel==='crearpass'){ box.classList.add('hm-subir-mas'); }
+    else if(panel==='pass'){ box.classList.add('hm-subir'); }
   }
 }
 function volverAEmail(){
@@ -294,7 +298,20 @@ function volverAEmail(){
 function mostrarPass(){
   _mostrarPanel('pass', true);
   document.getElementById('hm-msg-login').style.display = 'none';
-  setTimeout(function(){ var el=document.getElementById('hm-pass'); if(el){ el.value=''; el.focus(); } }, 50);
+  setTimeout(function(){
+    var el=document.getElementById('hm-pass');
+    if(el){
+      var recEmail = localStorage.getItem('hm_rec_email');
+      var recPass = localStorage.getItem('hm_rec_pass');
+      var emailActual = (document.getElementById('hm-email').value||'').trim().toLowerCase();
+      if(recEmail && recPass && recEmail.toLowerCase()===emailActual){
+        el.value = recPass;
+      } else {
+        el.value='';
+      }
+      el.focus();
+    }
+  }, 50);
 }
 function mostrarRecuperar(){
   var email = document.getElementById('hm-email').value.trim();
@@ -497,10 +514,18 @@ async function guardarContrasena(){
     setTimeout(function(){ location.replace('tiendaconprecio.html'); }, 1500);
   } else {
     // Primer acceso: Supabase exige confirmar el email antes de poder entrar
+    window.hmTempCred = {email: emailNuevo, pass: p1};
     msg.className='modal-msg ok'; msg.style.display='block';
-    msg.textContent='✓ Contraseña creada. Te hemos enviado un email de verificación. Confírmalo desde tu buzón para poder acceder al portal.';
+    msg.innerHTML = '✓ Contraseña creada. Te hemos enviado un email de verificación. Confírmalo desde tu buzón para poder acceder al portal.<br><button type="button" class="hm-submit" style="margin-top:14px" onclick="recordarCredenciales(this)">Recordar contraseña</button>';
     btn.disabled = true; btn.textContent = 'Guardar contraseña';
   }
+}
+
+function recordarCredenciales(btn){
+  if(!window.hmTempCred) return;
+  localStorage.setItem('hm_rec_email', window.hmTempCred.email);
+  localStorage.setItem('hm_rec_pass', window.hmTempCred.pass);
+  if(btn){ btn.textContent = '✓ Recordado'; btn.disabled = true; }
 }
 // — fin auth —
 function tarjeta(p){
@@ -715,8 +740,8 @@ window.addEventListener('resize',function(){
       <h3 style="color:var(--azul);margin:0 0 8px">¡Bienvenido!</h3>
       <p style="font-size:14px;color:var(--gris);margin:0 0 20px">Cree una contraseña de 8 caracteres. Debe contener mayúscula, minúscula, número y carácter especial (!"$%&amp;).</p>
       <input type="hidden" id="hm-email-nuevo">
-      <div class="hm-field"><label>Nueva contraseña</label><div class="hm-pass-wrap"><input type="password" id="hm-newpass1" placeholder="Mínimo 8 caracteres"><button class="hm-pass-toggle" onclick="togglePass('hm-newpass1')" type="button">&#128065;</button></div></div>
-      <div class="hm-field"><label>Repite la contraseña</label><div class="hm-pass-wrap"><input type="password" id="hm-newpass2" placeholder="Repite la contraseña"><button class="hm-pass-toggle" onclick="togglePass('hm-newpass2')" type="button">&#128065;</button></div></div>
+      <div class="hm-field"><label>Nueva contraseña</label><div class="hm-pass-wrap"><input type="text" id="hm-newpass1" placeholder="Mínimo 8 caracteres"></div></div>
+      <div class="hm-field"><label>Repite la contraseña</label><div class="hm-pass-wrap"><input type="text" id="hm-newpass2" placeholder="Repite la contraseña"></div></div>
       <button id="hm-btn-crearpass" class="hm-submit" onclick="guardarContrasena()">Guardar contraseña</button>
       <div id="hm-msg-crearpass" class="modal-msg" style="display:none"></div>
     </div>
