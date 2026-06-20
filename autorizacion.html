@@ -10,8 +10,13 @@
 </style></head>
 <body>
 <div class="box" id="box">Cargando...</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const BASE_URL = "https://pkwttturncewwdlpxrxz.supabase.co/functions/v1/autorizar-cliente";
+const sb = supabase.createClient(
+  "https://pkwttturncewwdlpxrxz.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3R0dHVybmNld3dkbHB4cnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTQ1OTEsImV4cCI6MjA5NTczMDU5MX0.aFKZbuO-0zO--SckT-FnjkGdOAV5nBWeEoLgMcV80VY"
+);
 const params = new URLSearchParams(window.location.search);
 const status = params.get("status");
 const box = document.getElementById("box");
@@ -29,7 +34,22 @@ function cerrarVentana() {
   }, 200);
 }
 
-if (status === "confirmar") {
+var hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+var accessToken = hashParams.get('access_token');
+var refreshToken = hashParams.get('refresh_token');
+
+if (accessToken && refreshToken) {
+  render("Iniciando sesión...", "#0d0190", "Un momento, te llevamos al portal.");
+  sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(function(res){
+    if (res.error) {
+      render("Cuenta verificada", "#1a7a4a",
+        "Tu cuenta ya está activa, pero no se pudo iniciar sesión automáticamente. Entra manualmente.",
+        '<a href="https://huevosmateos.github.io/portal-huevosmateos/tienda.html" class="btn">Ir al portal</a>');
+    } else {
+      window.location.replace('https://huevosmateos.github.io/portal-huevosmateos/tiendaconprecio.html');
+    }
+  });
+} else if (status === "confirmar") {
   const token = params.get("token");
   const codigo = params.get("codigo");
   const email = params.get("email");
