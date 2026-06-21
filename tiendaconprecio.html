@@ -270,7 +270,7 @@ function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-
 function lev(a,b){var m=a.length,n=b.length,i,j,prev=[],cur=[];for(j=0;j<=n;j++)prev[j]=j;for(i=1;i<=m;i++){cur[0]=i;for(j=1;j<=n;j++){cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a.charAt(i-1)===b.charAt(j-1)?0:1));}for(j=0;j<=n;j++)prev[j]=cur[j];}return prev[n];}
 function coincide(p,tokens){for(var i=0;i<tokens.length;i++){var t=tokens[i];if(p._s.indexOf(t)>=0)continue;var thr=t.length<=3?1:2,ok=false;for(var j=0;j<p._w.length;j++){var w=p._w[j];if(Math.abs(w.length-t.length)>thr)continue;if(lev(t,w)<=thr){ok=true;break;}}if(!ok)return false;}return true;}
 var PRODUCTOS=[], ORDEN_FAM=[], IMG={};
-var _tarifa=1, _clienteCod='', _clienteNombre='', _tipoIva='I';
+var _tarifa=1, _clienteCod='', _clienteNombre='', _tipoIva='I', _ofertas={};
 function _buildIndex(){
   IMG={};
   PRODUCTOS.forEach(function(p){
@@ -312,6 +312,12 @@ sb.auth.getSession().then(async function(r){
   _clienteNombre = chk.data.nombre || '';
   _tipoIva = chk.data.tipo_iva || 'I';
   _tarifa = chk.data.tarifa !== null && chk.data.tarifa !== undefined ? parseInt(chk.data.tarifa) : 1;
+  // 1b. Cargar precios especiales del cliente (tabla ofertas, ArticuloCliente con Automatico=0)
+  var fmtOf=function(n){return n!=null?Number(n).toFixed(2).replace('.',','):'';};
+  var ofRes = await sb.from('ofertas').select('articulo_codigo,precio_oferta').eq('cliente_codigo', _clienteCod);
+  if(!ofRes.error && ofRes.data){
+    ofRes.data.forEach(function(o){ _ofertas[o.articulo_codigo] = fmtOf(o.precio_oferta); });
+  }
   // 2. Cargar productos desde Supabase (RLS filtra publicar_web=true y vendible=true)
   var res = await sb.from('articulos').select('codigo,descripcion,precio_t0,precio_t1,precio_t2,precio_t3,unidad_monetaria,desc_formato,uds_por_caja_fija,peso_medio_caja,familia_codigo,familia,marca,imagenes,grupo_iva');
   if(res.error || !res.data){
@@ -349,8 +355,9 @@ function mostrarLoginWidget(){
 }
 function cerrarSesion(){ sb.auth.signOut().then(function(){ location.href='tienda.html'; }); }
 
-// Devuelve el precio correcto segun la tarifa del cliente logueado
+// Devuelve el precio correcto: precio especial del cliente (ofertas) si existe, si no el de su tarifa
 function getPrecio(p){
+  if(_ofertas[p.codigo]!==undefined) return _ofertas[p.codigo];
   if(_tarifa===0)return p.p0||p.precio||'';
   if(_tarifa===2)return p.p2||p.precio||'';
   if(_tarifa===3)return p.p3||p.precio||'';
