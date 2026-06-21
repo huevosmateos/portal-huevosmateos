@@ -216,6 +216,10 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 .card-buy .card-inqty.incart .cqty-btn{color:#1a7f37}
 .card-buy .card-inqty.incart .cqty-val{color:#1a7f37}
 .card-buy-envase{margin-top:7px;font-size:11.5px;line-height:1.3;font-weight:600;color:#0d0190;text-align:left;background:#eef0ff;border:1px solid #dcdcfb;border-radius:6px;padding:4px 8px}
+.modo-linea{cursor:pointer;user-select:none}
+.modo-linea.seleccionado{background:#eafaf0;border-color:#1a7f37;color:#1a7f37}
+.modo-linea.en-carrito::after{content:' \2713';font-weight:700}
+.card-buy-fraccion{margin-top:5px;font-size:11.5px;line-height:1.3;font-weight:600;color:#0d0190;text-align:left;background:#eef0ff;border:1px solid #dcdcfb;border-radius:6px;padding:4px 8px}
 .card-cod{color:var(--azul);font-weight:700}
 @media(max-width:600px){.cart-panel{width:100vw}.cart-fab{top:auto;bottom:18px;right:18px}
   .card-buy{padding:7px 8px}
@@ -306,7 +310,7 @@ async function _cargarCatalogo(esRefresco){
     ofRes.data.forEach(function(o){ ofertasNuevas[o.articulo_codigo] = fmt(o.precio_oferta); });
   }
   // Productos (RLS filtra publicar_web=true y vendible=true)
-  var res = await sb.from('articulos').select('codigo,descripcion,precio_t0,precio_t1,precio_t2,precio_t3,unidad_monetaria,desc_formato,uds_por_caja_fija,peso_medio_caja,familia_codigo,familia,marca,imagenes,grupo_iva');
+  var res = await sb.from('articulos').select('codigo,descripcion,precio_t0,precio_t1,precio_t2,precio_t3,unidad_monetaria,desc_formato,uds_por_caja_fija,peso_medio_caja,familia_codigo,familia,marca,imagenes,grupo_iva,uds_caja_fraccionable,min_fraccion,desc_fraccion');
   if(res.error || !res.data){
     if(!esRefresco){
       document.getElementById('catalogo').innerHTML='<p class="vacio">Error al cargar productos. Recarga la p\u00e1gina.</p>';
@@ -328,7 +332,10 @@ async function _cargarCatalogo(esRefresco){
       imgs: a.imagenes||[],
       upc: Number(a.uds_por_caja_fija)||0,
       peso: Number(a.peso_medio_caja)||0,
-      grupo_iva: Number(a.grupo_iva)||1
+      grupo_iva: Number(a.grupo_iva)||1,
+      fr_uds: Number(a.uds_caja_fraccionable)||0,
+      fr_min: Number(a.min_fraccion)||0,
+      fr_desc: a.desc_fraccion||''
     };
   });
   _ofertas = ofertasNuevas;
@@ -379,13 +386,26 @@ function mostrarLoginWidget(){
 }
 function cerrarSesion(){ sb.auth.signOut().then(function(){ location.href='tienda.html'; }); }
 
-// Devuelve el precio correcto: precio especial del cliente (ofertas) si existe, si no el de su tarifa
-function getPrecio(p){
-  if(_ofertas[p.codigo]!==undefined) return _ofertas[p.codigo];
+// Precio de tarifa puro, sin precio especial
+function getPrecioTarifa(p){
   if(_tarifa===0)return p.p0||p.precio||'';
   if(_tarifa===2)return p.p2||p.precio||'';
   if(_tarifa===3)return p.p3||p.precio||'';
   return p.p1||p.precio||'';
+}
+// Devuelve el precio correcto: precio especial del cliente (ofertas) si existe, si no el de su tarifa.
+// En modo fraccion: el precio especial SOLO se aplica si es mayor que el de tarifa
+// (los precios especiales son normalmente descuentos por caja completa, no aplican a fracciones).
+function getPrecio(p,modo){
+  var tarifa=getPrecioTarifa(p);
+  var oferta=_ofertas[p.codigo];
+  if(oferta===undefined) return tarifa;
+  if(modo==='fraccion'){
+    var ofNum=parseFloat(String(oferta).replace(',','.'))||0;
+    var tarNum=parseFloat(String(tarifa).replace(',','.'))||0;
+    return (ofNum>tarNum) ? oferta : tarifa;
+  }
+  return oferta;
 }
 // === PRODUCTOS HABITUALES ===
 // HABITUALES: CodigoCliente -> [codigos articulo] (se mantiene hardcodeado por ahora)
@@ -426,7 +446,7 @@ function tarjeta(p){
     '<div class=\'card-body\'>'+
       (p.marca?'<p class=\'marca\'>'+esc(p.marca)+'</p>':'')+
       '<h3><span class=\'card-cod\'>'+esc(p.codigo)+'</span> '+esc(p.nombre)+'</h3>'+
-      (getPrecio(p)?'<p class=\'precio\'>'+esc(getPrecio(p))+' &euro; <small>/ '+esc(p.unidad)+'</small></p>':'')+
+      (getPrecio(p,'caja')?'<p class=\'precio\' id=\'precio-'+p.codigo+'\'>'+esc(getPrecio(p,'caja'))+' &euro; <small>/ '+esc(p.unidad)+'</small></p>':'')+
     '<div class=\'card-buy\'>'+
       '<div class=\'card-buyrow\'>'+
         '<div class=\'card-inqty\'>'+
@@ -436,7 +456,8 @@ function tarjeta(p){
         '</div>'+
         '<button class=\'card-addbtn\' id=\'addbtn-'+p.codigo+'\' onclick=\'_cadd("'+p.codigo+'")\'>Añadir</button>'+
       '</div>'+
-      (p.envase?'<div class=\'card-buy-envase\'>'+esc(p.envase)+'</div>':'')+
+      (p.envase?'<div class=\'card-buy-envase modo-linea seleccionado\' id=\'env-'+p.codigo+'\' onclick=\'_setModo("'+p.codigo+'","caja")\'>'+esc(p.envase)+'</div>':'')+
+      (p.fr_uds>1?'<div class=\'card-buy-fraccion modo-linea\' id=\'frac-'+p.codigo+'\' onclick=\'_setModo("'+p.codigo+'","fraccion")\'>Fracci\u00f3n: m\u00ednimo '+esc(p.fr_min)+' '+esc(p.fr_desc)+'</div>':'')+
     '</div>'+
     '</div></article>';
 }
@@ -566,11 +587,19 @@ window.addEventListener('resize',function(){
 <script>
 /* ===== CARRITO DE COMPRA (solo cliente logueado: esta pagina ya exige sesion) ===== */
 var _carrito={};
+var _modoSel={};
 
-function _precioNum(p){return parseFloat((getPrecio(p)||'0').replace(',','.'))||0;}
-/* Subtotal correcto: cajas x unidades_por_caja x precio/ud (o cajas x peso x precio/kg) */
-function _subtotal(p,qty){
-  var pr=_precioNum(p);
+function _precioNum(p,modo){return parseFloat((getPrecio(p,modo)||'0').replace(',','.'))||0;}
+/* Subtotal correcto: cajas x unidades_por_caja x precio/ud (o cajas x peso x precio/kg)
+   En modo fraccion: si la unidad de venta es fija (docenas, unidades...) la cantidad YA esta
+   en esa unidad, no se multiplica por upc. Si es por kilo, se estima el peso por unidad de fraccion. */
+function _subtotal(p,qty,modo){
+  var pr=_precioNum(p,modo);
+  if(modo==='fraccion'){
+    if(p.upc>0) return qty*pr;
+    if(p.peso>0 && p.fr_uds>0) return qty*(p.peso/p.fr_uds)*pr;
+    return qty*pr;
+  }
   if(p.upc>0) return qty*p.upc*pr;
   if(p.peso>0) return qty*p.peso*pr;
   return qty*pr;
@@ -578,19 +607,23 @@ function _subtotal(p,qty){
 function _esEstimado(p){return p.upc===0 && p.peso>0;}
 
 /* Persistencia durante la sesion del navegador (se vacia al cerrar la pestaña) */
-function _csave(){try{var d={};Object.keys(_carrito).forEach(function(c){d[c]=_carrito[c].qty;});sessionStorage.setItem('hm_cart',JSON.stringify(d));}catch(e){}}
-function _cload(){try{var raw=sessionStorage.getItem('hm_cart');if(!raw)return;var d=JSON.parse(raw);Object.keys(d).forEach(function(c){var p=PRODUCTOS.find(function(x){return x.codigo===c;});if(p&&d[c]>0)_carrito[c]={p:p,qty:d[c]};});}catch(e){}}
+function _csave(){try{var d={};Object.keys(_carrito).forEach(function(k){d[k]={qty:_carrito[k].qty,codigo:_carrito[k].p.codigo,modo:_carrito[k].modo||'caja'};});sessionStorage.setItem('hm_cart',JSON.stringify(d));}catch(e){}}
+function _cload(){try{var raw=sessionStorage.getItem('hm_cart');if(!raw)return;var d=JSON.parse(raw);Object.keys(d).forEach(function(k){var info=d[k];var p=PRODUCTOS.find(function(x){return x.codigo===info.codigo;});if(p&&info.qty>0)_carrito[k]={p:p,qty:info.qty,modo:info.modo||'caja'};});}catch(e){}}
 
 /* Selector de la tarjeta: si el producto ya esta en el carrito, el numero es la cantidad
    TOTAL en el carrito y se edita en vivo; si no, es la cantidad que se va a añadir (minimo 1) */
 function _qstep(cod,d){
-  if(_carrito[cod]){
-    _carrito[cod].qty+=d;
-    if(_carrito[cod].qty<=0)delete _carrito[cod];
+  var modo=_modoSel[cod]||'caja';
+  var p=PRODUCTOS.find(function(x){return x.codigo===cod;});
+  var piso=(modo==='fraccion'&&p)?(p.fr_min||1):1;
+  var key=modo==='fraccion'?(cod+'#F'):cod;
+  if(_carrito[key]){
+    _carrito[key].qty+=d;
+    if(_carrito[key].qty<piso)delete _carrito[key];
     _csave();_cbadge();_cardSync(cod);_renderCarrito();
   }else{
     var qv=document.getElementById('qv-'+cod);if(!qv)return;
-    var n=(parseInt(qv.textContent,10)||1)+d;if(n<1)n=1;if(n>999)n=999;
+    var n=(parseInt(qv.textContent,10)||piso)+d;if(n<piso)n=piso;if(n>999)n=999;
     qv.textContent=n;
   }
 }
@@ -601,38 +634,67 @@ function _cbadge(){
   b.textContent=n;
   n>0?b.classList.remove('oculto'):b.classList.add('oculto');
 }
-/* Sincroniza la tarjeta con el carrito: boton verde "Añadido" + selector mostrando el total añadido */
+/* Sincroniza la tarjeta con el carrito: boton verde "Añadido" + selector mostrando el total añadido,
+   segun el modo (caja/fraccion) actualmente seleccionado en esa tarjeta */
 function _cardSync(cod){
+  var modo=_modoSel[cod]||'caja';
+  var p=PRODUCTOS.find(function(x){return x.codigo===cod;});
+  var piso=(modo==='fraccion'&&p)?(p.fr_min||1):1;
+  var key=modo==='fraccion'?(cod+'#F'):cod;
   var b=document.getElementById('addbtn-'+cod);
   var qv=document.getElementById('qv-'+cod);
   var box=qv?qv.parentNode:null;
-  var item=_carrito[cod];
+  var item=_carrito[key];
   if(item){
     if(b){b.classList.add('added');b.innerHTML='&#10003; Añadido';}
     if(qv)qv.textContent=item.qty;
     if(box)box.classList.add('incart');
   }else{
     if(b){b.classList.remove('added');b.innerHTML='Añadir';}
-    if(qv)qv.textContent='1';
+    if(qv)qv.textContent=piso;
     if(box)box.classList.remove('incart');
   }
+  var env=document.getElementById('env-'+cod);
+  var frac=document.getElementById('frac-'+cod);
+  if(env)env.classList.toggle('en-carrito',!!_carrito[cod]);
+  if(frac)frac.classList.toggle('en-carrito',!!_carrito[cod+'#F']);
+}
+/* Cambia el modo de compra (caja/fraccion) seleccionado en una tarjeta */
+function _setModo(cod,modo){
+  _modoSel[cod]=modo;
+  var env=document.getElementById('env-'+cod);
+  var frac=document.getElementById('frac-'+cod);
+  if(env)env.classList.toggle('seleccionado',modo==='caja');
+  if(frac)frac.classList.toggle('seleccionado',modo==='fraccion');
+  var p=PRODUCTOS.find(function(x){return x.codigo===cod;});
+  var precioEl=document.getElementById('precio-'+cod);
+  if(p&&precioEl){
+    var pr=getPrecio(p,modo);
+    precioEl.innerHTML=(pr?esc(pr):'')+' &euro; <small>/ '+esc(p.unidad)+'</small>';
+  }
+  _cardSync(cod);
 }
 function _cardSyncAll(){
   document.querySelectorAll('[id^="addbtn-"]').forEach(function(b){_cardSync(b.id.slice(7));});
 }
 function _cadd(cod){
   var p=PRODUCTOS.find(function(x){return x.codigo===cod;});if(!p)return;
-  if(_carrito[cod]){abrirCarrito();return;}   /* ya añadido: el selector controla la cantidad; el boton abre el carrito */
+  var modo=_modoSel[cod]||'caja';
+  var key=modo==='fraccion'?(cod+'#F'):cod;
+  if(_carrito[key]){abrirCarrito();return;}   /* ya añadido: el selector controla la cantidad; el boton abre el carrito */
+  var piso=(modo==='fraccion')?(p.fr_min||1):1;
   var qv=document.getElementById('qv-'+cod);
-  var n=qv?(parseInt(qv.textContent,10)||1):1;if(n<1)n=1;
-  _carrito[cod]={p:p,qty:n};
-  _csave();_cbadge();_cardSync(cod);          /* el selector queda mostrando el total añadido (ya no vuelve a 1) */
+  var n=qv?(parseInt(qv.textContent,10)||piso):piso;if(n<piso)n=piso;
+  _carrito[key]={p:p,qty:n,modo:modo};
+  _csave();_cbadge();_cardSync(cod);          /* el selector queda mostrando el total añadido (ya no vuelve al piso) */
 }
-function _cchg(cod,d){
-  if(!_carrito[cod])return;
-  _carrito[cod].qty+=d;
-  if(_carrito[cod].qty<=0)delete _carrito[cod];
-  _csave();_cbadge();_renderCarrito();_cardSync(cod);
+function _cchg(key,d){
+  if(!_carrito[key])return;
+  var p=_carrito[key].p; var modo=_carrito[key].modo||'caja';
+  var piso=(modo==='fraccion')?(p.fr_min||1):1;
+  _carrito[key].qty+=d;
+  if(_carrito[key].qty<piso)delete _carrito[key];
+  _csave();_cbadge();_renderCarrito();_cardSync(p.codigo);
 }
 
 function abrirCarrito(){
@@ -659,8 +721,8 @@ function _renderCarrito(){
   var REC = {1: 0.052, 2: 0.014, 3: 0.005};
 
   var total=0; var totalImp=0; var html='';
-  keys.forEach(function(cod){
-    var item=_carrito[cod];var p=item.p;var pr=_precioNum(p);var sub=_subtotal(p,item.qty);
+  keys.forEach(function(key){
+    var item=_carrito[key];var p=item.p;var modo=item.modo||'caja';var pr=_precioNum(p,modo);var sub=_subtotal(p,item.qty,modo);
     total+=sub;
     // Calcular IVA y recargo según grupo del artículo y tipo del cliente
     var grupo=p.grupo_iva||1;
@@ -672,10 +734,11 @@ function _renderCarrito(){
     var img=(p.imgs&&p.imgs.length)?'<img class="cart-item-img" src="'+p.imgs[0]+'" alt="" onerror="this.style.display=\'none\'">':'<div class="cart-item-img"></div>';
     var estim=_esEstimado(p)?'≈ ':'';
     var detalle=pr.toFixed(2).replace('.',',')+'€/'+esc(p.unidad);
+    var envaseTxt=(modo==='fraccion')?('Fracci\u00f3n: '+esc(p.fr_desc||'')):esc(p.envase||'');
     html+='<div class="cart-item">'+img+
-      '<div class="cart-item-info"><strong>'+esc(p.nombre)+'</strong><span>'+esc(p.envase||'')+'</span></div>'+
+      '<div class="cart-item-info"><strong>'+esc(p.nombre)+'</strong><span>'+envaseTxt+'</span></div>'+
       '<div class="cart-item-ctrl"><span class="cart-item-precio">'+estim+sub.toFixed(2).replace('.',',')+'&nbsp;€</span>'+
-      '<div class="cqty-ctrl"><button class="cqty-btn" onclick="_cchg(\''+cod+'\',-1)">&minus;</button><span class="cqty-val">'+item.qty+'</span><button class="cqty-btn" onclick="_cchg(\''+cod+'\',1)">+</button></div>'+
+      '<div class="cqty-ctrl"><button class="cqty-btn" onclick="_cchg(\''+key+'\',-1)">&minus;</button><span class="cqty-val">'+item.qty+'</span><button class="cqty-btn" onclick="_cchg(\''+key+'\',1)">+</button></div>'+
       '<span style="font-size:11px;color:#6b6b78">'+detalle+'</span></div></div>';
   });
   el.innerHTML=html;
@@ -696,21 +759,22 @@ async function enviarPedido(){
   btn.disabled=true; btn.textContent='Enviando...';
 
   var lineas=[]; var total=0;
-  keys.forEach(function(cod){
-    var item=_carrito[cod]; var p=item.p;
-    var sub=_subtotal(p,item.qty); total+=sub;
-    var precioNum=_precioNum(p);
+  keys.forEach(function(key){
+    var item=_carrito[key]; var p=item.p; var modo=item.modo||'caja';
+    var sub=_subtotal(p,item.qty,modo); total+=sub;
+    var precioNum=_precioNum(p,modo);
     lineas.push({
       codigo: p.codigo,
       nombre: p.nombre,
-      envase: p.envase||'',
+      envase: modo==='fraccion' ? ('Fracción: '+item.qty+' '+(p.fr_desc||'')) : (p.envase||''),
       cajas: item.qty,
-      uds_caja: p.upc||0,
-      peso_medio: p.peso||0,
+      uds_caja: modo==='fraccion' ? 0 : (p.upc||0),
+      peso_medio: modo==='fraccion' ? 0 : (p.peso||0),
       grupo_iva: p.grupo_iva||1,
       precio_ud: precioNum.toFixed(2).replace('.',','),
       subtotal: sub.toFixed(2).replace('.',','),
-      estimado: _esEstimado(p)
+      estimado: _esEstimado(p),
+      modo: modo
     });
   });
 
