@@ -296,37 +296,24 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 var _sbEmail = '';
 
-// Si no hay sesion -> volver a tienda
-sb.auth.getSession().then(async function(r){
-  var session = r.data && r.data.session;
-  if(!session || !session.user){ location.replace('tienda.html'); return; }
-  _sbEmail = session.user.email;
-  // 1. Obtener datos del cliente (codigo, tarifa, autorizacion)
-  var chk = await sb.from('clientes').select('codigo,tarifa,puede_acceder,nombre,tipo_iva').eq('email', _sbEmail.toLowerCase()).single();
-  if(chk.error || !chk.data || !chk.data.puede_acceder){
-    await sb.auth.signOut();
-    location.replace('tienda.html');
-    return;
-  }
-  _clienteCod = chk.data.codigo || '';
-  _clienteNombre = chk.data.nombre || '';
-  _tipoIva = chk.data.tipo_iva || 'I';
-  _tarifa = chk.data.tarifa !== null && chk.data.tarifa !== undefined ? parseInt(chk.data.tarifa) : 1;
-  // 1b. Cargar precios especiales del cliente (tabla ofertas, ArticuloCliente con Automatico=0)
-  var fmtOf=function(n){return n!=null?Number(n).toFixed(2).replace('.',','):'';};
+// Carga (o recarga) productos y precios especiales desde Supabase
+var fmt=function(n){return n!=null?Number(n).toFixed(2).replace('.',','):'';};
+async function _cargarCatalogo(esRefresco){
+  // Precios especiales del cliente (tabla ofertas, ArticuloCliente con Automatico=0)
+  var ofertasNuevas = {};
   var ofRes = await sb.from('ofertas').select('articulo_codigo,precio_oferta').eq('cliente_codigo', _clienteCod);
   if(!ofRes.error && ofRes.data){
-    ofRes.data.forEach(function(o){ _ofertas[o.articulo_codigo] = fmtOf(o.precio_oferta); });
+    ofRes.data.forEach(function(o){ ofertasNuevas[o.articulo_codigo] = fmt(o.precio_oferta); });
   }
-  // 2. Cargar productos desde Supabase (RLS filtra publicar_web=true y vendible=true)
+  // Productos (RLS filtra publicar_web=true y vendible=true)
   var res = await sb.from('articulos').select('codigo,descripcion,precio_t0,precio_t1,precio_t2,precio_t3,unidad_monetaria,desc_formato,uds_por_caja_fija,peso_medio_caja,familia_codigo,familia,marca,imagenes,grupo_iva');
   if(res.error || !res.data){
-    document.getElementById('catalogo').innerHTML='<p class="vacio">Error al cargar productos. Recarga la p\u00e1gina.</p>';
-    mostrarLoginWidget();
-    return;
+    if(!esRefresco){
+      document.getElementById('catalogo').innerHTML='<p class="vacio">Error al cargar productos. Recarga la p\u00e1gina.</p>';
+      mostrarLoginWidget();
+    }
+    return false;
   }
-  // 3. Construir array PRODUCTOS con el mismo formato que espera el resto del codigo
-  var fmt=function(n){return n!=null?Number(n).toFixed(2).replace('.',','):'';}
   PRODUCTOS = res.data.map(function(a){
     return {
       codigo: a.codigo||'',
@@ -344,9 +331,46 @@ sb.auth.getSession().then(async function(r){
       grupo_iva: Number(a.grupo_iva)||1
     };
   });
+  _ofertas = ofertasNuevas;
   _buildIndex();
+
+  if(esRefresco){
+    // Sincronizar el carrito con los productos actualizados (precios, o articulo dado de baja)
+    Object.keys(_carrito).forEach(function(cod){
+      var actualizado = PRODUCTOS.find(function(x){return x.codigo===cod;});
+      if(actualizado){ _carrito[cod].p = actualizado; }
+      else { delete _carrito[cod]; }
+    });
+    _csave();
+    if(document.getElementById('cart-panel').classList.contains('abierto')) _renderCarrito();
+    pintar(); initMobile();
+  }
+  return true;
+}
+
+// Si no hay sesion -> volver a tienda
+sb.auth.getSession().then(async function(r){
+  var session = r.data && r.data.session;
+  if(!session || !session.user){ location.replace('tienda.html'); return; }
+  _sbEmail = session.user.email;
+  // 1. Obtener datos del cliente (codigo, tarifa, autorizacion)
+  var chk = await sb.from('clientes').select('codigo,tarifa,puede_acceder,nombre,tipo_iva').eq('email', _sbEmail.toLowerCase()).single();
+  if(chk.error || !chk.data || !chk.data.puede_acceder){
+    await sb.auth.signOut();
+    location.replace('tienda.html');
+    return;
+  }
+  _clienteCod = chk.data.codigo || '';
+  _clienteNombre = chk.data.nombre || '';
+  _tipoIva = chk.data.tipo_iva || 'I';
+  _tarifa = chk.data.tarifa !== null && chk.data.tarifa !== undefined ? parseInt(chk.data.tarifa) : 1;
+  // 2. Cargar productos y precios especiales
+  var ok = await _cargarCatalogo(false);
+  if(!ok) return;
   mostrarLoginWidget();
   pintar(); initMobile();
+  // Refrescar catalogo y precios cada 3 minutos sin necesidad de recargar la pagina
+  setInterval(function(){ _cargarCatalogo(true); }, 180000);
 });
 
 function mostrarLoginWidget(){
