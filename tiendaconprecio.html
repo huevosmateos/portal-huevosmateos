@@ -274,7 +274,7 @@ function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-
 function lev(a,b){var m=a.length,n=b.length,i,j,prev=[],cur=[];for(j=0;j<=n;j++)prev[j]=j;for(i=1;i<=m;i++){cur[0]=i;for(j=1;j<=n;j++){cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a.charAt(i-1)===b.charAt(j-1)?0:1));}for(j=0;j<=n;j++)prev[j]=cur[j];}return prev[n];}
 function coincide(p,tokens){for(var i=0;i<tokens.length;i++){var t=tokens[i];if(p._s.indexOf(t)>=0)continue;var thr=t.length<=3?1:2,ok=false;for(var j=0;j<p._w.length;j++){var w=p._w[j];if(Math.abs(w.length-t.length)>thr)continue;if(lev(t,w)<=thr){ok=true;break;}}if(!ok)return false;}return true;}
 var PRODUCTOS=[], ORDEN_FAM=[], IMG={};
-var _tarifa=1, _clienteCod='', _clienteNombre='', _tipoIva='I', _ofertas={};
+var _tarifa=1, _clienteCod='', _clienteNombre='', _tipoIva='I', _ofertas={}, _verCache=Date.now();
 function _buildIndex(){
   IMG={};
   PRODUCTOS.forEach(function(p){
@@ -303,6 +303,7 @@ var _sbEmail = '';
 // Carga (o recarga) productos y precios especiales desde Supabase
 var fmt=function(n){return n!=null?Number(n).toFixed(2).replace('.',','):'';};
 async function _cargarCatalogo(esRefresco){
+  _verCache = Date.now();
   // Precios especiales del cliente (tabla ofertas, ArticuloCliente con Automatico=0)
   var ofertasNuevas = {};
   var ofRes = await sb.from('ofertas').select('articulo_codigo,precio_oferta').eq('cliente_codigo', _clienteCod);
@@ -319,6 +320,7 @@ async function _cargarCatalogo(esRefresco){
     return false;
   }
   PRODUCTOS = res.data.map(function(a){
+    var imgsConVersion=(a.imagenes||[]).map(function(u){return u+(u.indexOf('?')>=0?'&':'?')+'v='+_verCache;});
     return {
       codigo: a.codigo||'',
       nombre: a.descripcion||'',
@@ -329,7 +331,7 @@ async function _cargarCatalogo(esRefresco){
       unidad: a.unidad_monetaria||'',
       fam_cod: a.familia_codigo||'',
       familia: a.familia||'',
-      imgs: a.imagenes||[],
+      imgs: imgsConVersion,
       upc: Number(a.uds_por_caja_fija)||0,
       peso: Number(a.peso_medio_caja)||0,
       grupo_iva: Number(a.grupo_iva)||1,
