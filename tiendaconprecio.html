@@ -627,14 +627,15 @@ function _qstep(cod,d){
   var modo=_modoSel[cod]||'caja';
   var p=PRODUCTOS.find(function(x){return x.codigo===cod;});
   var piso=(modo==='fraccion'&&p)?(p.fr_min||1):1;
+  var paso=piso;
   var key=modo==='fraccion'?(cod+'#F'):cod;
   if(_carrito[key]){
-    _carrito[key].qty+=d;
+    _carrito[key].qty+=d*paso;
     if(_carrito[key].qty<piso)delete _carrito[key];
     _csave();_cbadge();_cardSync(cod);_renderCarrito();
   }else{
     var qv=document.getElementById('qv-'+cod);if(!qv)return;
-    var n=(parseInt(qv.textContent,10)||piso)+d;if(n<piso)n=piso;if(n>999)n=999;
+    var n=(parseInt(qv.textContent,10)||piso)+d*paso;if(n<piso)n=piso;if(n>999)n=999;
     qv.textContent=n;
   }
 }
@@ -703,7 +704,7 @@ function _cchg(key,d){
   if(!_carrito[key])return;
   var p=_carrito[key].p; var modo=_carrito[key].modo||'caja';
   var piso=(modo==='fraccion')?(p.fr_min||1):1;
-  _carrito[key].qty+=d;
+  _carrito[key].qty+=d*piso;
   if(_carrito[key].qty<piso)delete _carrito[key];
   _csave();_cbadge();_renderCarrito();_cardSync(p.codigo);
 }
