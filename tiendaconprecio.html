@@ -393,6 +393,17 @@ function getPrecioTarifa(p){
   if(_tarifa===3)return p.p3||p.precio||'';
   return p.p1||p.precio||'';
 }
+// Extrae la palabra de unidad legible del texto de formato por defecto (ej. "Cajas de 20 docenas" -> "docenas")
+// cogiendo lo que aparece despues del ultimo numero. Si no se puede extraer, usa la unidad monetaria como respaldo.
+function unidadFraccionTexto(p){
+  var texto=p.envase||'';
+  var m=texto.match(/(\d+)\s*([^\d]*)$/);
+  if(m&&m[2]){
+    var palabra=m[2].trim().replace(/\.$/,'');
+    if(palabra) return palabra;
+  }
+  return p.unidad||'';
+}
 // Devuelve el precio correcto: precio especial del cliente (ofertas) si existe, si no el de su tarifa.
 // En modo fraccion: el precio especial SOLO se aplica si es mayor que el de tarifa
 // (los precios especiales son normalmente descuentos por caja completa, no aplican a fracciones).
@@ -457,7 +468,7 @@ function tarjeta(p){
         '<button class=\'card-addbtn\' id=\'addbtn-'+p.codigo+'\' onclick=\'_cadd("'+p.codigo+'")\'>Añadir</button>'+
       '</div>'+
       (p.envase?'<div class=\'card-buy-envase modo-linea seleccionado\' id=\'env-'+p.codigo+'\' onclick=\'_setModo("'+p.codigo+'","caja")\'>'+esc(p.envase)+'</div>':'')+
-      (p.fr_uds>1?'<div class=\'card-buy-fraccion modo-linea\' id=\'frac-'+p.codigo+'\' onclick=\'_setModo("'+p.codigo+'","fraccion")\'>Fracci\u00f3n: m\u00ednimo '+esc(p.fr_min)+' '+esc(p.fr_desc)+'</div>':'')+
+      (p.fr_uds>1?'<div class=\'card-buy-fraccion modo-linea\' id=\'frac-'+p.codigo+'\' onclick=\'_setModo("'+p.codigo+'","fraccion")\'>Fracci\u00f3n: '+esc(p.fr_min)+' '+esc(unidadFraccionTexto(p))+'</div>':'')+
     '</div>'+
     '</div></article>';
 }
@@ -734,7 +745,7 @@ function _renderCarrito(){
     var img=(p.imgs&&p.imgs.length)?'<img class="cart-item-img" src="'+p.imgs[0]+'" alt="" onerror="this.style.display=\'none\'">':'<div class="cart-item-img"></div>';
     var estim=_esEstimado(p)?'≈ ':'';
     var detalle=pr.toFixed(2).replace('.',',')+'€/'+esc(p.unidad);
-    var envaseTxt=(modo==='fraccion')?('Fracci\u00f3n: '+esc(p.fr_desc||'')):esc(p.envase||'');
+    var envaseTxt=(modo==='fraccion')?('Fracci\u00f3n: '+item.qty+' '+esc(unidadFraccionTexto(p))):esc(p.envase||'');
     html+='<div class="cart-item">'+img+
       '<div class="cart-item-info"><strong>'+esc(p.nombre)+'</strong><span>'+envaseTxt+'</span></div>'+
       '<div class="cart-item-ctrl"><span class="cart-item-precio">'+estim+sub.toFixed(2).replace('.',',')+'&nbsp;€</span>'+
@@ -766,7 +777,7 @@ async function enviarPedido(){
     lineas.push({
       codigo: p.codigo,
       nombre: p.nombre,
-      envase: modo==='fraccion' ? ('Fracción: '+item.qty+' '+(p.fr_desc||'')) : (p.envase||''),
+      envase: modo==='fraccion' ? ('Fracción: '+item.qty+' '+unidadFraccionTexto(p)) : (p.envase||''),
       cajas: item.qty,
       uds_caja: modo==='fraccion' ? 0 : (p.upc||0),
       peso_medio: modo==='fraccion' ? 0 : (p.peso||0),
