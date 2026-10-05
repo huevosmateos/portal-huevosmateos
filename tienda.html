@@ -56,7 +56,12 @@ main{max-width:1180px;margin:0 auto;padding:0 20px}
 .lb{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:100}
 .lb.on{display:flex}.lb img{max-width:86vw;max-height:86vh;border-radius:8px;background:#fff}
 .lb-x{position:absolute;top:18px;right:26px;color:#fff;font-size:40px;cursor:pointer;line-height:1}
-.lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);color:#fff;border:0;font-size:34px;width:54px;height:54px;border-radius:50%;cursor:pointer}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:var(--azul);color:#fff;border:3px solid #fff;font-size:34px;line-height:1;width:58px;height:58px;border-radius:50%;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:0 0 4px;z-index:2}
+.lb-nav:hover{background:var(--yema);color:#1d1d27}
+.lb-x{z-index:2;background:var(--azul);border:3px solid #fff;border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:32px!important;box-shadow:0 4px 18px rgba(0,0,0,.45)}
+.lb-cont{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);background:var(--azul);color:#fff;border:2px solid #fff;border-radius:20px;padding:4px 14px;font-size:14px;font-weight:700;z-index:2}
+.lb.una .lb-nav,.lb.una .lb-cont{display:none}
+@media(max-width:600px){.lb-nav{width:46px;height:46px;font-size:28px}.lb-prev{left:8px}.lb-next{right:8px}}
 .lb-prev{left:20px}.lb-next{right:20px}
 .contacto{padding:0 0 60px}.cont-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:40px}
 .cont-form label{display:block;margin-bottom:14px;font-size:14px;color:var(--gris)}
@@ -219,7 +224,7 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
   </div>
 </main>
 </div><!-- /app -->
-<div id="lb" class="lb"><span class="lb-x">&times;</span><button class="lb-nav lb-prev">&#8249;</button><img id="lb-img" alt=""><button class="lb-nav lb-next">&#8250;</button></div>
+<div id="lb" class="lb"><span class="lb-x">&times;</span><span class="lb-cont" id="lb-cont"></span><button class="lb-nav lb-prev">&#8249;</button><img id="lb-img" alt=""><button class="lb-nav lb-next">&#8250;</button></div>
 <script>
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
 function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
@@ -614,8 +619,8 @@ function pintar(){
 }
 // --- lightbox ---
 var LB=[], LBi=0;
-function lbShow(){document.getElementById('lb-img').src=LB[LBi]||'';}
-function abrirLB(cod){LB=IMG[cod]||[];if(!LB.length)return;LBi=0;lbShow();document.getElementById('lb').classList.add('on');}
+function lbShow(){document.getElementById('lb-img').src=LB[LBi]||'';var c=document.getElementById('lb-cont');if(c)c.textContent=(LBi+1)+' / '+LB.length;}
+function abrirLB(cod){LB=IMG[cod]||[];if(!LB.length)return;LBi=0;lbShow();var l=document.getElementById('lb');l.classList.toggle('una',LB.length<2);l.classList.add('on');}
 function cerrarLB(){document.getElementById('lb').classList.remove('on');}
 document.getElementById('catalogo').addEventListener('click',function(e){
   var ci=e.target.closest('.card-img'); if(!ci)return;
@@ -625,7 +630,7 @@ document.querySelector('.lb-x').addEventListener('click',cerrarLB);
 document.getElementById('lb').addEventListener('click',function(e){if(e.target===this)cerrarLB();});
 document.querySelector('.lb-prev').addEventListener('click',function(e){e.stopPropagation();LBi=(LBi-1+LB.length)%LB.length;lbShow();});
 document.querySelector('.lb-next').addEventListener('click',function(e){e.stopPropagation();LBi=(LBi+1)%LB.length;lbShow();});
-document.addEventListener('keydown',function(e){if(e.key==='Escape')cerrarLB();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')cerrarLB();var l=document.getElementById('lb');if(!l.classList.contains('on')||LB.length<2)return;if(e.key==='ArrowLeft'){LBi=(LBi-1+LB.length)%LB.length;lbShow();}if(e.key==='ArrowRight'){LBi=(LBi+1)%LB.length;lbShow();}});
 // Evitar que Backspace navegue hacia atras cuando se pulsa fuera de un campo editable o en readonly
 document.addEventListener('keydown',function(e){
   if(e.key==='Backspace'){
