@@ -252,7 +252,7 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
   <a href="index.html" onclick="return _navGuard(event,'index.html')">Inicio</a>
   <a href="tienda.html" class="activo" onclick="return _navGuard(event,'tienda.html')">Tienda</a>
   <a href="contacto.html" onclick="return _navGuard(event,'contacto.html')">Contacto</a>
-  <div class="nav-buscador"><input id="q" type="search" placeholder="Buscar en el catalogo..."></div>
+  <div class="nav-buscador"><input id="q" type="search" placeholder="Buscar en el catalogo..." autocomplete="off"></div>
   <button id="btn-hab" type="button" onclick="mostrarHabituales()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);padding:6px 28px;border-radius:6px;font-size:13px;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:8px;min-width:220px">&#9733; Ver Productos Habituales</button>
 </div></nav>
 
@@ -273,6 +273,35 @@ function esc(s){var d=document.createElement('div');d.textContent=s||'';return d
 function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
 function lev(a,b){var m=a.length,n=b.length,i,j,prev=[],cur=[];for(j=0;j<=n;j++)prev[j]=j;for(i=1;i<=m;i++){cur[0]=i;for(j=1;j<=n;j++){cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a.charAt(i-1)===b.charAt(j-1)?0:1));}for(j=0;j<=n;j++)prev[j]=cur[j];}return prev[n];}
 function coincide(p,tokens){for(var i=0;i<tokens.length;i++){var t=tokens[i];if(p._s.indexOf(t)>=0)continue;var thr=t.length<=3?1:2,ok=false;for(var j=0;j<p._w.length;j++){var w=p._w[j];if(Math.abs(w.length-t.length)>thr)continue;if(lev(t,w)<=thr){ok=true;break;}}if(!ok)return false;}return true;}
+
+// === FILTROS PERSISTENTES: familia, busqueda y habituales se guardan en la direccion (sobreviven a F5) ===
+var _filtrosListos=false;
+var _filtroIni=(function(){try{var u=new URLSearchParams(location.search);return {fam:u.get('fam')||'',q:u.get('q')||'',hab:u.get('hab')==='1'};}catch(e){return {fam:'',q:'',hab:false};}})();
+function _guardarFiltrosURL(){
+  if(!_filtrosListos) return;
+  try{
+    var u=new URLSearchParams();
+    var a=document.querySelector('#fam-list a.activo');
+    var fam=a?(a.getAttribute('data-fam')||''):'';
+    var qi=document.getElementById('q');
+    var q=qi?(qi.value||'').trim():'';
+    if(fam) u.set('fam',fam);
+    if(q) u.set('q',q);
+    if(typeof _habActivo!=='undefined' && _habActivo) u.set('hab','1');
+    var s=u.toString();
+    history.replaceState(history.state,'',location.pathname+(s?'?'+s:'')+location.hash);
+  }catch(e){}
+}
+function _marcarFamilia(f){
+  var hecho=false;
+  document.querySelectorAll('#fam-list a').forEach(function(a){
+    var es=!hecho && (a.getAttribute('data-fam')||'')===f;
+    if(es) hecho=true;
+    a.classList.toggle('activo',es);
+  });
+  if(!hecho){var t=document.querySelector('#fam-list a[data-fam=""]'); if(t) t.classList.add('activo');}
+  return hecho;
+}
 var PRODUCTOS=[], ORDEN_FAM=[], IMG={};
 var _tarifa=1, _clienteCod='', _clienteNombre='', _tipoIva='I', _ofertas={}, _verCache=Date.now();
 function _buildIndex(){
@@ -289,8 +318,13 @@ function _buildIndex(){
   var ul=document.getElementById('fam-list');
   if(ul){
     var cont={};PRODUCTOS.forEach(function(p){if(p.familia)cont[p.familia]=(cont[p.familia]||0)+1;});
-    var h='<li><a href="#" data-fam="" class="activo">Todas</a></li>';
-    ORDEN_FAM.forEach(function(f){h+='<li><a href="#" data-fam="'+esc(f)+'">'+esc(f)+' <span>'+(cont[f]||0)+'</span></a></li>';});
+    // Conservar la familia seleccionada (al cargar desde la direccion y en el refresco cada 3 minutos)
+    var _a=ul.querySelector('a.activo');
+    var famActual=_a?(_a.getAttribute('data-fam')||''):'';
+    if(!_filtrosListos && _filtroIni.fam) famActual=_filtroIni.fam;
+    if(ORDEN_FAM.indexOf(famActual)<0) famActual='';
+    var h='<li><a href="#" data-fam=""'+((!famActual && !_habActivo)?' class="activo"':'')+'>Todas</a></li>';
+    ORDEN_FAM.forEach(function(f){h+='<li><a href="#" data-fam="'+esc(f)+'"'+((f===famActual && !_habActivo)?' class="activo"':'')+'>'+esc(f)+' <span>'+(cont[f]||0)+'</span></a></li>';});
     ul.innerHTML=h;
   }
 }
@@ -360,7 +394,7 @@ async function _cargarCatalogo(esRefresco){
 // Si no hay sesion -> volver a tienda
 sb.auth.getSession().then(async function(r){
   var session = r.data && r.data.session;
-  if(!session || !session.user){ location.replace('tienda.html'); return; }
+  if(!session || !session.user){ location.replace('tienda.html'+location.search); return; }
   _sbEmail = session.user.email;
   // 1. Obtener datos del cliente (codigo, tarifa, autorizacion)
   var chk = await sb.from('clientes').select('codigo,tarifa,puede_acceder,nombre,tipo_iva').eq('email', _sbEmail.toLowerCase()).single();
@@ -377,6 +411,13 @@ sb.auth.getSession().then(async function(r){
   var ok = await _cargarCatalogo(false);
   if(!ok) return;
   mostrarLoginWidget();
+  // Restaurar el filtro de productos habituales si estaba activo antes de refrescar
+  if(_filtroIni.hab && _clienteCod && HABITUALES[_clienteCod] && HABITUALES[_clienteCod].length){
+    _habActivo=true;
+    var _bh=document.getElementById('btn-hab'); if(_bh){_bh.classList.add('activo');_bh.innerHTML='&#9733; Ver Todos los Productos';}
+    document.querySelectorAll('#fam-list a').forEach(function(a){a.classList.remove('activo');});
+  }
+  _filtrosListos=true;
   pintar(); initMobile();
   // Refrescar catalogo y precios cada 3 minutos sin necesidad de recargar la pagina
   setInterval(function(){ _cargarCatalogo(true); }, 180000);
@@ -475,6 +516,7 @@ function tarjeta(p){
     '</div></article>';
 }
 function pintar(){
+  _guardarFiltrosURL();
   var q=(document.getElementById('q').value||'').toLowerCase().trim();
   var _famEl=document.querySelector('#fam-list a.activo');
   var fam=_famEl?_famEl.getAttribute('data-fam'):'';
@@ -541,7 +583,7 @@ document.getElementById('fam-list').addEventListener('click',function(e){
   this.querySelectorAll('a').forEach(function(x){x.classList.remove('activo');});
   a.classList.add('activo'); pintar(); initMobile(); var c=document.getElementById('catalogo'); if(c)c.scrollTop=0;
 });
-(function(){try{var f=new URLSearchParams(location.search).get('fam');if(f){var a=document.querySelector('#fam-list a[data-fam="'+f+'"]');if(a){document.querySelectorAll('#fam-list a').forEach(function(x){x.classList.remove('activo');});a.classList.add('activo');}}}catch(e){}})();
+(function(){try{if(_filtroIni.fam)_marcarFamilia(_filtroIni.fam);var qi=document.getElementById('q');if(qi)qi.value=_filtroIni.q;}catch(e){}})();
 pintar(); initMobile();
 
 
