@@ -642,6 +642,29 @@ document.addEventListener('keydown',function(e){
   }
 });
 document.getElementById('q').addEventListener('input',pintar);
+// === BUSCADOR EN MOVIL: al pulsar la lupa del teclado se cierra el teclado y suben
+// los resultados (se oculta la cabecera y queda visible el buscador arriba) ===
+(function(){
+  var qi=document.getElementById('q'); if(!qi) return;
+  qi.setAttribute('enterkeyhint','search');
+  function esMovil(){ return window.innerWidth<=860; }
+  function subirResultados(){
+    var cat=document.getElementById('catalogo');
+    // asegurar que hay pagina suficiente para poder subir aunque haya pocos resultados
+    if(cat) cat.style.minHeight=window.innerHeight+'px';
+    var caja=qi.closest('.nav-buscador')||qi;
+    var y=caja.getBoundingClientRect().top+window.pageYOffset-4;
+    window.scrollTo({top:Math.max(0,y),behavior:'smooth'});
+  }
+  qi.addEventListener('keydown',function(e){
+    if(e.key!=='Enter') return;
+    e.preventDefault();
+    if(!esMovil()) return;
+    qi.blur();                          // cierra el teclado
+    setTimeout(subirResultados,350);    // espera a que el teclado se cierre
+  });
+})();
+
 document.getElementById('fam-list').addEventListener('click',function(e){
   var a=e.target.closest('a'); if(!a)return; e.preventDefault();
   this.querySelectorAll('a').forEach(function(x){x.classList.remove('activo');});
