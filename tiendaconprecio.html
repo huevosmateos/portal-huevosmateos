@@ -336,8 +336,26 @@ function _buildIndex(){
 // === SUPABASE SESION ===
 const SUPABASE_URL = 'https://pkwttturncewwdlpxrxz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3R0dHVybmNld3dkbHB4cnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTQ1OTEsImV4cCI6MjA5NTczMDU5MX0.aFKZbuO-0zO--SckT-FnjkGdOAV5nBWeEoLgMcV80VY';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// === MODO ADMINISTRADOR ===
+// Si se entra desde admin.html, sessionStorage trae el codigo del cliente elegido.
+// En ese modo se usa la sesion del ADMIN (storageKey propio) y se cargan los datos
+// de ese cliente, como si el se hubiera logueado.
+var _adminCli = null, _adminEmail = '', _clienteNomCom = '';
+try{ _adminCli = sessionStorage.getItem('hm_admin_cliente') || null; }catch(e){ _adminCli = null; }
+const sb = _adminCli
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: 'hm-admin-auth', persistSession: true, autoRefreshToken: true } })
+  : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 var _sbEmail = '';
+function _emailReal(e){
+  if(!e) return '';
+  if(/^NONE_/i.test(e)) return '';
+  var m = /^DUPLICADO_[^_]+_(.+)$/i.exec(e);
+  return m ? m[1] : e;
+}
+function _salirModoAdmin(){
+  try{ sessionStorage.removeItem('hm_admin_cliente'); }catch(e){}
+  location.replace('admin.html');
+}
 
 // Carga (o recarga) productos y precios especiales desde Supabase
 var fmt=function(n){return n!=null?Number(n).toFixed(2).replace('.',','):'';};
@@ -399,14 +417,33 @@ async function _cargarCatalogo(esRefresco){
 // Si no hay sesion -> volver a tienda
 sb.auth.getSession().then(async function(r){
   var session = r.data && r.data.session;
-  if(!session || !session.user){ location.replace('tienda.html'+location.search); return; }
-  _sbEmail = session.user.email;
-  // 1. Obtener datos del cliente (codigo, tarifa, autorizacion)
-  var chk = await sb.from('clientes').select('codigo,tarifa,puede_acceder,nombre,tipo_iva').eq('email', _sbEmail.toLowerCase()).single();
-  if(chk.error || !chk.data || !chk.data.puede_acceder){
-    await sb.auth.signOut();
-    location.replace('tienda.html');
-    return;
+  var chk;
+  if(_adminCli){
+    // --- MODO ADMIN: sesion de administrador + cliente elegido en admin.html ---
+    if(!session || !session.user){ _salirModoAdmin(); return; }
+    var adm = await sb.rpc('es_admin');
+    if(adm.error || adm.data !== true){ _salirModoAdmin(); return; }
+    _adminEmail = session.user.email || '';
+    chk = await sb.from('clientes').select('codigo,tarifa,puede_acceder,nombre,nombre_comercial,tipo_iva,email').eq('codigo', _adminCli).single();
+    if(chk.error || !chk.data){
+      alert('No se pudo cargar el cliente '+_adminCli+'. Vuelve a seleccionarlo en el panel.');
+      _salirModoAdmin();
+      return;
+    }
+    _sbEmail = _emailReal(chk.data.email);
+    _clienteNomCom = chk.data.nombre_comercial || '';
+    _mostrarBannerAdmin();
+  } else {
+    // --- MODO NORMAL: el cliente se ha logueado ---
+    if(!session || !session.user){ location.replace('tienda.html'+location.search); return; }
+    _sbEmail = session.user.email;
+    // 1. Obtener datos del cliente (codigo, tarifa, autorizacion)
+    chk = await sb.from('clientes').select('codigo,tarifa,puede_acceder,nombre,tipo_iva').eq('email', _sbEmail.toLowerCase()).single();
+    if(chk.error || !chk.data || !chk.data.puede_acceder){
+      await sb.auth.signOut();
+      location.replace('tienda.html');
+      return;
+    }
   }
   _clienteCod = chk.data.codigo || '';
   _clienteNombre = chk.data.nombre || '';
@@ -432,9 +469,35 @@ sb.auth.getSession().then(async function(r){
 
 function mostrarLoginWidget(){
   var w=document.getElementById('nav-login-widget'); if(!w)return;
+  if(_adminCli){
+    var nom = _clienteNomCom || _clienteNombre || '';
+    w.innerHTML="<div class='nav-logged'><span>&#128100; Cliente: <b>"+esc(_clienteCod)+" &middot; "+esc(nom)+"</b></span><button type='button' onclick='cerrarSesion()'>Cambiar cliente</button></div>";
+    return;
+  }
   w.innerHTML="<div class='nav-logged'><span>&#10003; Hola, <b>"+(_sbEmail||'')+"</b></span><button type='button' onclick='cerrarSesion()'>Cerrar sesion</button></div>";
 }
-function cerrarSesion(){ sb.auth.signOut().then(function(){ location.href='tienda.html'; }); }
+function cerrarSesion(){
+  // En modo admin NO se cierra la sesion del administrador: se vuelve al panel
+  if(_adminCli){
+    if(Object.keys(_carrito||{}).length && !confirm('Hay productos en el carrito de este cliente sin enviar. Se guardarán por si vuelves a él. ¿Volver al panel?')) return;
+    location.href = 'admin.html';   // el panel reabre la ficha de este cliente
+    return;
+  }
+  sb.auth.signOut().then(function(){ location.href='tienda.html'; });
+}
+// Franja amarilla fija arriba para que quede claro que es un pedido en nombre del cliente
+function _mostrarBannerAdmin(){
+  if(document.getElementById('admin-banner')) return;
+  var nom = _clienteNomCom || _clienteNombre || '';
+  var b = document.createElement('div');
+  b.id = 'admin-banner';
+  b.style.cssText = 'background:#f5b301;color:#1d1d27;font-size:14px;font-weight:700;padding:8px 16px;text-align:center;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap';
+  b.innerHTML = '<span>&#128274; MODO ADMINISTRADOR &middot; Pedido en nombre de <u>'+esc(_clienteCod)+' &middot; '+esc(nom)+'</u></span>'+
+    '<button type="button" onclick="cerrarSesion()" style="background:#0d0190;color:#fff;border:0;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">&#8592; Volver al panel</button>';
+  var app = document.querySelector('.app');
+  if(app) app.insertBefore(b, app.firstChild); else document.body.insertBefore(b, document.body.firstChild);
+  document.title = 'Pedido para ' + nom + ' - Huevos Mateos';
+}
 
 // Precio de tarifa puro, sin precio especial
 function getPrecioTarifa(p){
@@ -670,8 +733,10 @@ function _esEstimado(p){return p.upc===0 && p.peso>0;}
 
 /* Persistencia durante la sesion del navegador (se vacia al cerrar la pestaña) */
 var _carritoCargado=false;
-function _csave(){if(!_carritoCargado)return;try{var d={};Object.keys(_carrito).forEach(function(k){d[k]={qty:_carrito[k].qty,codigo:_carrito[k].p.codigo,modo:_carrito[k].modo||'caja'};});sessionStorage.setItem('hm_cart',JSON.stringify(d));}catch(e){}}
-function _cload(){try{var raw=sessionStorage.getItem('hm_cart');if(!raw)return;var d=JSON.parse(raw);Object.keys(d).forEach(function(k){var info=d[k];var p=PRODUCTOS.find(function(x){return x.codigo===info.codigo;});if(p&&info.qty>0)_carrito[k]={p:p,qty:info.qty,modo:info.modo||'caja'};});}catch(e){}}
+/* En modo admin cada cliente tiene su propio carrito, para no mezclar pedidos */
+function _cartKey(){ return _adminCli ? ('hm_cart_admin_'+_adminCli) : 'hm_cart'; }
+function _csave(){if(!_carritoCargado)return;try{var d={};Object.keys(_carrito).forEach(function(k){d[k]={qty:_carrito[k].qty,codigo:_carrito[k].p.codigo,modo:_carrito[k].modo||'caja'};});sessionStorage.setItem(_cartKey(),JSON.stringify(d));}catch(e){}}
+function _cload(){try{var raw=sessionStorage.getItem(_cartKey());if(!raw)return;var d=JSON.parse(raw);Object.keys(d).forEach(function(k){var info=d[k];var p=PRODUCTOS.find(function(x){return x.codigo===info.codigo;});if(p&&info.qty>0)_carrito[k]={p:p,qty:info.qty,modo:info.modo||'caja'};});}catch(e){}}
 
 /* Selector de la tarjeta: si el producto ya esta en el carrito, el numero es la cantidad
    TOTAL en el carrito y se edita en vivo; si no, es la cantidad que se va a añadir (minimo 1) */
@@ -844,12 +909,15 @@ async function enviarPedido(){
 
   try {
     // 1. Guardar pedido en Supabase
-    var ins=await sb.from('pedidos').insert({
+    var filaPedido={
       cliente_email: _sbEmail,
       cliente_codigo: _clienteCod||'',
       lineas: lineas,
       total: total
-    }).select('id').single();
+    };
+    // En modo admin se guarda quien ha hecho el pedido en nombre del cliente
+    if(_adminCli) filaPedido.creado_por = _adminEmail;
+    var ins=await sb.from('pedidos').insert(filaPedido).select('id').single();
 
     if(ins.error) throw new Error(ins.error.message);
     var pedido_id=ins.data.id;
@@ -872,18 +940,31 @@ async function enviarPedido(){
           cliente_codigo: _clienteCod||'',
           tipo_iva: _tipoIva,
           lineas: lineas,
-          total: totalStr
+          total: totalStr,
+          creado_por: _adminCli ? _adminEmail : ''
         })
       }
     );
-    if(!res.ok) throw new Error('Error al enviar emails');
+    if(!res.ok){
+      if(_adminCli){
+        // El pedido YA esta guardado en Supabase: no se debe repetir aunque falle el email
+        vaciarCarrito();
+        cerrarCarrito();
+        alert('Pedido GUARDADO (nº '+pedido_id+') para el cliente '+_clienteCod+', pero no se pudo enviar el email de confirmación.\nNo lo vuelvas a enviar.');
+        btn.disabled=false; btn.textContent='✓ Confirmar Pedido';
+        return;
+      }
+      throw new Error('Error al enviar emails');
+    }
 
     // 3. Vaciar carrito y mostrar confirmación
     vaciarCarrito();
     cerrarCarrito();
     var aviso=document.createElement('div');
     aviso.style.cssText='position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a7a4a;color:#fff;padding:18px 32px;border-radius:10px;font-size:15px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);text-align:center;max-width:90%';
-    aviso.textContent='\u2713 Pedido confirmado. Recibirás un email con el resumen.';
+    aviso.textContent=_adminCli
+      ? ('\u2713 Pedido confirmado para '+_clienteCod+' \u00b7 '+(_clienteNomCom||_clienteNombre)+'.')
+      : '\u2713 Pedido confirmado. Recibirás un email con el resumen.';
     document.body.appendChild(aviso);
     setTimeout(function(){aviso.remove();},6000);
 
