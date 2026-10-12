@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Administración - Huevos Mateos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#0d0190;--azul2:#1b16c9;--yema:#f5b301;--txt:#1d1d27;--gris:#6b6b78;--linea:#e7e7ef;--bg:#fafafb;--ok:#1a7a4a;--err:#b91c1c}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Manrope',system-ui,sans-serif;color:var(--txt);background:var(--bg);line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;line-height:1.15;margin:0 0 .4em}
+.top{background:#fff;border-bottom:1px solid var(--linea)}
+.top-inner{max-width:1180px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-img{height:70px;width:auto}
+.badge-admin{background:var(--azul);color:#fff;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:20px}
+.user-box{display:none;align-items:center;gap:12px;font-size:14px;color:var(--gris)}
+.user-box b{color:var(--azul)}
+.user-box button{background:transparent;border:1px solid var(--linea);color:var(--txt);padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit}
+.user-box button:hover{border-color:var(--azul);color:var(--azul)}
+.nav{background:var(--azul);height:6px}
+main{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:40px 20px}
+
+/* LOGIN */
+#vista-login{display:flex;justify-content:center;align-items:flex-start;padding-top:30px}
+.login-box{background:#fff;border:1px solid var(--linea);border-radius:16px;padding:36px 32px;width:100%;max-width:420px;box-shadow:0 10px 40px rgba(13,1,144,.08)}
+.login-box h2{color:var(--azul);font-size:26px}
+.login-box p.sub{font-size:14px;color:var(--gris);margin:0 0 22px}
+.campo{margin-bottom:16px}
+.campo label{display:block;font-size:13px;font-weight:700;color:var(--gris);margin-bottom:5px}
+.campo input{display:block;width:100%;padding:11px 13px;border:1px solid var(--linea);border-radius:8px;font-size:15px;font-family:inherit}
+.campo input:focus{outline:none;border-color:var(--azul)}
+.pass-wrap{position:relative}
+.pass-wrap input{padding-right:44px}
+.pass-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gris);font-size:18px;padding:0}
+.btn{width:100%;background:var(--azul);color:#fff;border:none;padding:13px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn:hover{background:var(--azul2)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.msg{display:none;margin-top:14px;padding:10px 14px;border-radius:8px;font-size:13px}
+.msg.err{display:block;background:#fdecea;color:var(--err)}
+.msg.ok{display:block;background:#e6f9f0;color:var(--ok)}
+
+/* PANEL */
+#vista-panel{display:none}
+.panel-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px;padding-bottom:14px;border-bottom:2px solid var(--yema)}
+.panel-head h1{font-size:34px;color:var(--azul);margin:0}
+.panel-head p{margin:0;color:var(--gris);font-size:14px}
+.tarjeta{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:28px 30px}
+.tarjeta h3{color:var(--azul);font-size:20px}
+.pendiente{display:flex;gap:18px;align-items:flex-start}
+.pendiente .ic{flex:0 0 auto;width:48px;height:48px;border-radius:12px;background:#eef0ff;color:var(--azul);display:flex;align-items:center;justify-content:center;font-size:24px}
+.pendiente p{margin:0;color:var(--gris);font-size:14px}
+
+/* Pantalla de carga inicial */
+#vista-cargando{text-align:center;color:var(--gris);padding-top:60px}
+
+.pie{background:var(--azul);color:#cfcffb;text-align:center;font-size:13px;padding:16px}
+
+@media(max-width:600px){
+  .logo-img{height:48px}
+  .top-inner{flex-wrap:wrap;padding:10px 14px}
+  .user-box{width:100%;justify-content:space-between}
+  main{padding:24px 14px}
+  .login-box{padding:26px 20px}
+  .panel-head h1{font-size:26px}
+  .tarjeta{padding:20px 18px}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<header class="top"><div class="top-inner">
+  <div class="logo">
+    <img src="assets/logo.bmp" alt="Huevos Mateos" class="logo-img">
+    <span class="badge-admin">Administración</span>
+  </div>
+  <div class="user-box" id="user-box">
+    <span>Conectado como <b id="user-email"></b></span>
+    <button type="button" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
+</div></header>
+<div class="nav"></div>
+
+<main>
+  <!-- Comprobando sesion -->
+  <section id="vista-cargando">Comprobando sesión...</section>
+
+  <!-- LOGIN ADMIN -->
+  <section id="vista-login" style="display:none">
+    <div class="login-box">
+      <h2>Acceso administrador</h2>
+      <p class="sub">Zona restringida. Solo personal autorizado de Huevos Mateos.</p>
+      <div class="campo">
+        <label for="adm-email">Email</label>
+        <input type="email" id="adm-email" autocomplete="username" placeholder="admin@huevosmateos.es">
+      </div>
+      <div class="campo">
+        <label for="adm-pass">Contraseña</label>
+        <div class="pass-wrap">
+          <input type="password" id="adm-pass" autocomplete="current-password" placeholder="••••••••">
+          <button class="pass-toggle" type="button" onclick="togglePass()" aria-label="Mostrar contraseña">&#128065;</button>
+        </div>
+      </div>
+      <button class="btn" id="btn-login" onclick="loginAdmin()">Entrar</button>
+      <div class="msg" id="msg-login"></div>
+    </div>
+  </section>
+
+  <!-- PANEL ADMIN (tras login correcto) -->
+  <section id="vista-panel">
+    <div class="panel-head">
+      <div>
+        <h1>Pedidos en nombre de cliente</h1>
+        <p>Selecciona un cliente para entrar en su catálogo con sus precios y hacer el pedido por él.</p>
+      </div>
+    </div>
+    <div class="tarjeta">
+      <div class="pendiente">
+        <div class="ic">&#128100;</div>
+        <div>
+          <h3>Selección de cliente</h3>
+          <p>Pendiente de definir. Aquí irá el buscador de clientes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="pie">© 2026 · Huevos Mateos, S.L. · Panel interno</div>
+
+<script>
+// === SUPABASE (mismo proyecto que el portal) ===
+const SUPABASE_URL = 'https://pkwttturncewwdlpxrxz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3R0dHVybmNld3dkbHB4cnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTQ1OTEsImV4cCI6MjA5NTczMDU5MX0.aFKZbuO-0zO--SckT-FnjkGdOAV5nBWeEoLgMcV80VY';
+
+// storageKey propio: la sesion del admin NO se mezcla con la de los clientes
+// en tienda.html / tiendaconprecio.html (mismo dominio, mismo proyecto Supabase).
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { storageKey: 'hm-admin-auth', persistSession: true, autoRefreshToken: true }
+});
+
+var _adminEmail = '';
+
+function mostrar(vista){
+  document.getElementById('vista-cargando').style.display = vista==='cargando' ? 'block' : 'none';
+  document.getElementById('vista-login').style.display    = vista==='login'    ? 'flex'  : 'none';
+  document.getElementById('vista-panel').style.display    = vista==='panel'    ? 'block' : 'none';
+  document.getElementById('user-box').style.display       = vista==='panel'    ? 'flex'  : 'none';
+  if(vista==='login') setTimeout(function(){ var e=document.getElementById('adm-email'); if(e) e.focus(); }, 50);
+}
+
+function msgLogin(texto, tipo){
+  var m = document.getElementById('msg-login');
+  m.className = 'msg ' + (tipo||'err');
+  m.textContent = texto;
+}
+
+function togglePass(){
+  var el = document.getElementById('adm-pass');
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+// Comprueba en Supabase que el usuario logueado esta en la tabla admins
+async function esAdmin(){
+  var r = await sb.rpc('es_admin');
+  if(r.error){ console.error(r.error); return false; }
+  return r.data === true;
+}
+
+async function entrarPanel(user){
+  _adminEmail = user.email || '';
+  document.getElementById('user-email').textContent = _adminEmail;
+  mostrar('panel');
+}
+
+async function loginAdmin(){
+  var email = (document.getElementById('adm-email').value||'').trim().toLowerCase();
+  var pass  = document.getElementById('adm-pass').value || '';
+  document.getElementById('msg-login').className = 'msg';
+  if(!email || !pass){ msgLogin('Introduce email y contraseña.'); return; }
+
+  var btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+
+  var res = await sb.auth.signInWithPassword({ email: email, password: pass });
+  if(res.error){
+    btn.disabled = false; btn.textContent = 'Entrar';
+    msgLogin('Email o contraseña incorrectos.');
+    return;
+  }
+
+  var ok = await esAdmin();
+  btn.disabled = false; btn.textContent = 'Entrar';
+  if(!ok){
+    await sb.auth.signOut();
+    msgLogin('Este usuario no tiene permisos de administrador.');
+    return;
+  }
+  document.getElementById('adm-pass').value = '';
+  entrarPanel(res.data.user);
+}
+
+async function cerrarSesion(){
+  await sb.auth.signOut();
+  _adminEmail = '';
+  mostrar('login');
+}
+
+// Enter en los campos
+document.getElementById('adm-email').addEventListener('keydown', function(e){
+  if(e.key==='Enter'){ e.preventDefault(); document.getElementById('adm-pass').focus(); }
+});
+document.getElementById('adm-pass').addEventListener('keydown', function(e){
+  if(e.key==='Enter'){ e.preventDefault(); loginAdmin(); }
+});
+
+// Si se cierra la sesion en otra pestaña, volver al login
+sb.auth.onAuthStateChange(function(event){
+  if(event === 'SIGNED_OUT') mostrar('login');
+});
+
+// Arranque: si ya hay sesion de admin guardada, entrar directamente
+(async function(){
+  mostrar('cargando');
+  var r = await sb.auth.getSession();
+  var s = r.data && r.data.session;
+  if(s && s.user && await esAdmin()){
+    entrarPanel(s.user);
+  } else {
+    if(s) await sb.auth.signOut();
+    mostrar('login');
+  }
+})();
+</script>
+</body>
+</html>
