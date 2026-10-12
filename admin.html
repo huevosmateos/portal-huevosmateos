@@ -284,6 +284,7 @@ async function loginAdmin(){
   entrarPanel(res.data.user);
 }
 async function cerrarSesion(){
+  try{ sessionStorage.removeItem('hm_admin_cliente'); }catch(e){}
   await sb.auth.signOut();
   _adminEmail = ''; CLIENTES = []; _clienteSel = null;
   mostrar('login');
@@ -316,6 +317,13 @@ async function cargarClientes(){
   info.textContent = CLIENTES.length + ' clientes disponibles. Escribe al menos 2 letras.';
   if(!CLIENTES.length) info.textContent = 'No se ha recibido ningún cliente. Revisa el permiso del admin en Supabase.';
   inp.focus();
+  // Si volvemos de la tienda, reabrir la ficha del cliente con el que estabamos
+  var ultimo = null;
+  try{ ultimo = sessionStorage.getItem('hm_admin_cliente'); }catch(e){}
+  if(ultimo){
+    var c = CLIENTES.find(function(x){ return x.codigo === ultimo; });
+    if(c) seleccionarCliente(c);
+  }
 }
 
 // ---------------- buscador ----------------
@@ -414,7 +422,7 @@ function seleccionarCliente(c){
       dato('Tipo de IVA', esc(tipoIva))+
     '</div>'+
     '<div class="ficha-acc">'+
-      '<button class="btn-pri" type="button" disabled title="Próximamente">&#128722; Hacer pedido para este cliente</button>'+
+      '<button class="btn-pri" type="button" onclick="hacerPedido()">&#128722; Hacer pedido para este cliente</button>'+
       '<button class="btn-sec" type="button" onclick="cambiarCliente()">&#8592; Cambiar de cliente</button>'+
     '</div>';
   var f = document.getElementById('ficha');
@@ -422,8 +430,15 @@ function seleccionarCliente(c){
   f.style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+// Abre la tienda con precios como si este cliente se hubiera logueado
+function hacerPedido(){
+  if(!_clienteSel) return;
+  try{ sessionStorage.setItem('hm_admin_cliente', _clienteSel.codigo); }catch(e){}
+  location.href = 'tiendaconprecio.html';
+}
 function cambiarCliente(){
   _clienteSel = null;
+  try{ sessionStorage.removeItem('hm_admin_cliente'); }catch(e){}
   document.getElementById('ficha').style.display = 'none';
   document.getElementById('bloque-buscador').style.display = 'block';
   var inp = document.getElementById('q-cli');
