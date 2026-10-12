@@ -106,6 +106,7 @@ mark{background:#fff1c2;color:inherit;padding:0 1px;border-radius:2px}
   .login-box{padding:26px 20px}
   .panel-head h1{font-size:24px}
   .tarjeta{padding:16px 14px}
+  .resultados{max-height:none;overflow:visible}
   .res{grid-template-columns:52px 1fr;padding:10px 12px}
   .res-pob{grid-column:2;text-align:left}
   .ficha-head h2{font-size:21px}
@@ -462,15 +463,32 @@ document.getElementById('adm-pass').addEventListener('keydown', function(e){
   if(e.key==='Enter'){ e.preventDefault(); loginAdmin(); }
 });
 document.getElementById('q-cli').addEventListener('input', buscar);
+// En movil: al pulsar la lupa del teclado se cierra el teclado y suben los resultados,
+// ocultando la cabecera y dejando el buscador visible arriba
+function esMovil(){ return window.innerWidth<=860; }
+function subirResultados(){
+  var inp=document.getElementById('q-cli');
+  document.getElementById('resultados').style.minHeight = (window.innerHeight*0.7)+'px';
+  var caja=inp.closest('.buscador-wrap')||inp;
+  var y=caja.getBoundingClientRect().top+window.pageYOffset-8;
+  window.scrollTo({top:Math.max(0,y),behavior:'smooth'});
+}
+document.getElementById('q-cli').setAttribute('enterkeyhint','search');
 document.getElementById('q-cli').addEventListener('keydown', function(e){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    if(_resIdx >= 0 && _resActual[_resIdx]){ seleccionarCliente(_resActual[_resIdx]); return; }
+    if(esMovil()){
+      this.blur();                        // cierra el teclado
+      setTimeout(subirResultados, 350);   // espera a que el teclado se cierre
+      return;
+    }
+    if(_resActual.length===1) seleccionarCliente(_resActual[0]);
+    return;
+  }
   if(!_resActual.length) return;
   if(e.key==='ArrowDown'){ e.preventDefault(); _resIdx = Math.min(_resIdx+1, _resActual.length-1); marcarRes(); }
   else if(e.key==='ArrowUp'){ e.preventDefault(); _resIdx = Math.max(_resIdx-1, 0); marcarRes(); }
-  else if(e.key==='Enter'){
-    e.preventDefault();
-    var i = _resIdx >= 0 ? _resIdx : (_resActual.length===1 ? 0 : -1);
-    if(i >= 0) seleccionarCliente(_resActual[i]);
-  }
 });
 document.getElementById('resultados').addEventListener('click', function(e){
   var el = e.target.closest('.res'); if(!el) return;
