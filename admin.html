@@ -13,6 +13,7 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:'Manrope',system-ui,sans-serif;color:var(--txt);background:var(--bg);line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
 h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;line-height:1.15;margin:0 0 .4em}
+a{color:inherit;text-decoration:none}
 .top{background:#fff;border-bottom:1px solid var(--linea)}
 .top-inner{max-width:1180px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 .logo{display:flex;align-items:center;gap:14px}
@@ -46,28 +47,67 @@ main{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:40px 20px}
 
 /* PANEL */
 #vista-panel{display:none}
-.panel-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px;padding-bottom:14px;border-bottom:2px solid var(--yema)}
-.panel-head h1{font-size:34px;color:var(--azul);margin:0}
+.panel-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid var(--yema)}
+.panel-head h1{font-size:32px;color:var(--azul);margin:0}
 .panel-head p{margin:0;color:var(--gris);font-size:14px}
-.tarjeta{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:28px 30px}
-.tarjeta h3{color:var(--azul);font-size:20px}
-.pendiente{display:flex;gap:18px;align-items:flex-start}
-.pendiente .ic{flex:0 0 auto;width:48px;height:48px;border-radius:12px;background:#eef0ff;color:var(--azul);display:flex;align-items:center;justify-content:center;font-size:24px}
-.pendiente p{margin:0;color:var(--gris);font-size:14px}
+.tabs{display:flex;gap:8px;margin-bottom:18px}
+.tab{background:#fff;border:1px solid var(--linea);color:var(--gris);padding:9px 18px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.tab.activo{background:var(--azul);border-color:var(--azul);color:#fff}
+.tab:disabled{opacity:.55;cursor:not-allowed}
+.tarjeta{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:24px 26px}
 
-/* Pantalla de carga inicial */
+/* BUSCADOR */
+.buscador-wrap{position:relative}
+.buscador-wrap input{width:100%;padding:14px 18px 14px 46px;font-size:16px;border:1px solid var(--linea);border-radius:10px;font-family:inherit;background:#fff}
+.buscador-wrap input:focus{outline:none;border-color:var(--azul);box-shadow:0 0 0 3px rgba(13,1,144,.08)}
+.buscador-wrap .lupa{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--gris)}
+.info-busq{font-size:13px;color:var(--gris);margin:10px 2px 0}
+.resultados{margin-top:14px;border:1px solid var(--linea);border-radius:10px;overflow:hidden;max-height:460px;overflow-y:auto;display:none}
+.res{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--linea);cursor:pointer;background:#fff}
+.res:last-child{border-bottom:none}
+.res:hover,.res.sel{background:#eef0ff}
+.res-cod{font-weight:700;color:var(--azul);font-size:14px}
+.res-nom{font-weight:700;font-size:14px;line-height:1.3}
+.res-fis{font-size:12.5px;color:var(--gris);line-height:1.3}
+.res-pob{font-size:12.5px;color:var(--gris);text-align:right;white-space:nowrap}
+.vacio{padding:18px;color:var(--gris);font-size:14px;background:#fff}
+mark{background:#fff1c2;color:inherit;padding:0 1px;border-radius:2px}
+
+/* FICHA */
+#ficha{display:none;margin-top:20px}
+.ficha-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.ficha-head h2{color:var(--azul);font-size:26px;margin:0 0 2px}
+.ficha-head .fiscal{color:var(--gris);font-size:14px}
+.chip{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:#eef0ff;color:var(--azul);margin-right:6px}
+.chip.no{background:#fdecea;color:var(--err)}
+.chip.si{background:#e6f9f0;color:var(--ok)}
+.datos{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.dato{background:var(--bg);border:1px solid var(--linea);border-radius:10px;padding:12px 14px}
+.dato .lbl{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gris)}
+.dato .val{font-size:15px;font-weight:600;word-break:break-word}
+.dato .val a{color:var(--azul)}
+.dato .val.vac{color:#a0a0b0;font-weight:500}
+.ficha-acc{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.btn-sec{background:#fff;color:var(--azul);border:2px solid var(--azul);padding:11px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-sec:hover{background:#eef0ff}
+.btn-pri{background:var(--azul);color:#fff;border:none;padding:13px 22px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-pri:disabled{opacity:.5;cursor:not-allowed}
+
 #vista-cargando{text-align:center;color:var(--gris);padding-top:60px}
-
 .pie{background:var(--azul);color:#cfcffb;text-align:center;font-size:13px;padding:16px}
 
 @media(max-width:600px){
   .logo-img{height:48px}
   .top-inner{flex-wrap:wrap;padding:10px 14px}
   .user-box{width:100%;justify-content:space-between}
-  main{padding:24px 14px}
+  main{padding:22px 12px}
   .login-box{padding:26px 20px}
-  .panel-head h1{font-size:26px}
-  .tarjeta{padding:20px 18px}
+  .panel-head h1{font-size:24px}
+  .tarjeta{padding:16px 14px}
+  .res{grid-template-columns:52px 1fr;padding:10px 12px}
+  .res-pob{grid-column:2;text-align:left}
+  .ficha-head h2{font-size:21px}
+  .btn-pri,.btn-sec{width:100%}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -76,7 +116,7 @@ main{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:40px 20px}
 
 <header class="top"><div class="top-inner">
   <div class="logo">
-    <img src="assets/logo.bmp" alt="Huevos Mateos" class="logo-img">
+    <a href="index.html"><img src="assets/logo.bmp" alt="Huevos Mateos" class="logo-img"></a>
     <span class="badge-admin">Administración</span>
   </div>
   <div class="user-box" id="user-box">
@@ -87,7 +127,6 @@ main{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:40px 20px}
 <div class="nav"></div>
 
 <main>
-  <!-- Comprobando sesion -->
   <section id="vista-cargando">Comprobando sesión...</section>
 
   <!-- LOGIN ADMIN -->
@@ -111,23 +150,31 @@ main{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:40px 20px}
     </div>
   </section>
 
-  <!-- PANEL ADMIN (tras login correcto) -->
+  <!-- PANEL ADMIN -->
   <section id="vista-panel">
     <div class="panel-head">
       <div>
         <h1>Pedidos en nombre de cliente</h1>
-        <p>Selecciona un cliente para entrar en su catálogo con sus precios y hacer el pedido por él.</p>
+        <p>Busca el cliente por nombre comercial, razón social o código.</p>
       </div>
     </div>
-    <div class="tarjeta">
-      <div class="pendiente">
-        <div class="ic">&#128100;</div>
-        <div>
-          <h3>Selección de cliente</h3>
-          <p>Pendiente de definir. Aquí irá el buscador de clientes.</p>
-        </div>
-      </div>
+
+    <div class="tabs">
+      <button class="tab activo" type="button">&#128269; Buscar cliente</button>
+      <button class="tab" type="button" disabled title="Próximamente">&#128666; Buscar por ruta</button>
     </div>
+
+    <div class="tarjeta" id="bloque-buscador">
+      <div class="buscador-wrap">
+        <span class="lupa">&#128269;</span>
+        <input type="search" id="q-cli" placeholder="Escribe nombre comercial, razón social o código..." autocomplete="off" disabled>
+      </div>
+      <p class="info-busq" id="info-busq">Cargando clientes...</p>
+      <div class="resultados" id="resultados"></div>
+    </div>
+
+    <!-- FICHA DEL CLIENTE SELECCIONADO -->
+    <div class="tarjeta" id="ficha"></div>
   </section>
 </main>
 
@@ -139,13 +186,51 @@ const SUPABASE_URL = 'https://pkwttturncewwdlpxrxz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3R0dHVybmNld3dkbHB4cnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTQ1OTEsImV4cCI6MjA5NTczMDU5MX0.aFKZbuO-0zO--SckT-FnjkGdOAV5nBWeEoLgMcV80VY';
 
 // storageKey propio: la sesion del admin NO se mezcla con la de los clientes
-// en tienda.html / tiendaconprecio.html (mismo dominio, mismo proyecto Supabase).
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { storageKey: 'hm-admin-auth', persistSession: true, autoRefreshToken: true }
 });
 
 var _adminEmail = '';
+var CLIENTES = [];        // todos los clientes no bloqueados (cargados una vez)
+var _clienteSel = null;   // cliente seleccionado
+var MAX_RES = 60;         // maximo de resultados que se pintan
 
+// ---------------- utilidades ----------------
+function esc(s){var d=document.createElement('div');d.textContent=(s==null?'':String(s));return d.innerHTML;}
+function norm(s){return (s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9@.]+/g,' ').trim();}
+function emailReal(e){
+  if(!e) return '';
+  if(/^NONE_/i.test(e)) return '';
+  var m = /^DUPLICADO_[^_]+_(.+)$/i.exec(e);
+  return m ? m[1] : e;
+}
+function telLink(t){
+  if(!t) return '';
+  var limpio = String(t).replace(/[^\d+]/g,'');
+  return limpio ? '<a href="tel:'+esc(limpio)+'">'+esc(t)+'</a>' : esc(t);
+}
+// Resalta en el texto las palabras buscadas (sin tener en cuenta acentos)
+function resaltar(texto, tokens){
+  var t = esc(texto||'');
+  if(!tokens.length || !texto) return t;
+  var base = norm(texto);
+  if(base.length !== String(texto).length) return t; // si no cuadran posiciones, sin resaltado
+  var marcas = new Array(texto.length).fill(false);
+  tokens.forEach(function(tok){
+    var i = base.indexOf(tok);
+    while(i >= 0){ for(var k=i;k<i+tok.length;k++) marcas[k]=true; i = base.indexOf(tok, i+tok.length); }
+  });
+  var out='', dentro=false;
+  for(var i=0;i<texto.length;i++){
+    if(marcas[i] && !dentro){ out+='<mark>'; dentro=true; }
+    if(!marcas[i] && dentro){ out+='</mark>'; dentro=false; }
+    out += esc(texto[i]);
+  }
+  if(dentro) out+='</mark>';
+  return out;
+}
+
+// ---------------- vistas ----------------
 function mostrar(vista){
   document.getElementById('vista-cargando').style.display = vista==='cargando' ? 'block' : 'none';
   document.getElementById('vista-login').style.display    = vista==='login'    ? 'flex'  : 'none';
@@ -153,47 +238,41 @@ function mostrar(vista){
   document.getElementById('user-box').style.display       = vista==='panel'    ? 'flex'  : 'none';
   if(vista==='login') setTimeout(function(){ var e=document.getElementById('adm-email'); if(e) e.focus(); }, 50);
 }
-
 function msgLogin(texto, tipo){
   var m = document.getElementById('msg-login');
   m.className = 'msg ' + (tipo||'err');
   m.textContent = texto;
 }
-
 function togglePass(){
   var el = document.getElementById('adm-pass');
   el.type = el.type === 'password' ? 'text' : 'password';
 }
 
-// Comprueba en Supabase que el usuario logueado esta en la tabla admins
+// ---------------- login ----------------
 async function esAdmin(){
   var r = await sb.rpc('es_admin');
   if(r.error){ console.error(r.error); return false; }
   return r.data === true;
 }
-
 async function entrarPanel(user){
   _adminEmail = user.email || '';
   document.getElementById('user-email').textContent = _adminEmail;
   mostrar('panel');
+  cargarClientes();
 }
-
 async function loginAdmin(){
   var email = (document.getElementById('adm-email').value||'').trim().toLowerCase();
   var pass  = document.getElementById('adm-pass').value || '';
   document.getElementById('msg-login').className = 'msg';
   if(!email || !pass){ msgLogin('Introduce email y contraseña.'); return; }
-
   var btn = document.getElementById('btn-login');
   btn.disabled = true; btn.textContent = 'Entrando...';
-
   var res = await sb.auth.signInWithPassword({ email: email, password: pass });
   if(res.error){
     btn.disabled = false; btn.textContent = 'Entrar';
     msgLogin('Email o contraseña incorrectos.');
     return;
   }
-
   var ok = await esAdmin();
   btn.disabled = false; btn.textContent = 'Entrar';
   if(!ok){
@@ -204,22 +283,177 @@ async function loginAdmin(){
   document.getElementById('adm-pass').value = '';
   entrarPanel(res.data.user);
 }
-
 async function cerrarSesion(){
   await sb.auth.signOut();
-  _adminEmail = '';
+  _adminEmail = ''; CLIENTES = []; _clienteSel = null;
   mostrar('login');
 }
 
-// Enter en los campos
+// ---------------- carga de clientes ----------------
+async function cargarClientes(){
+  var info = document.getElementById('info-busq');
+  var inp  = document.getElementById('q-cli');
+  info.textContent = 'Cargando clientes...';
+  var todos = [], desde = 0, lote = 1000;
+  while(true){
+    var r = await sb.from('clientes')
+      .select('codigo,nombre,nombre_comercial,poblacion,telefono,telefono2,telefono3,email,tarifa,tipo_iva,puede_acceder')
+      .order('codigo', { ascending: true })
+      .range(desde, desde + lote - 1);
+    if(r.error){
+      info.textContent = 'Error al cargar clientes: ' + r.error.message;
+      return;
+    }
+    todos = todos.concat(r.data || []);
+    if(!r.data || r.data.length < lote) break;
+    desde += lote;
+  }
+  CLIENTES = todos.map(function(c){
+    c._s = norm([c.codigo, c.nombre_comercial, c.nombre].join(' '));
+    return c;
+  });
+  inp.disabled = false;
+  info.textContent = CLIENTES.length + ' clientes disponibles. Escribe al menos 2 letras.';
+  if(!CLIENTES.length) info.textContent = 'No se ha recibido ningún cliente. Revisa el permiso del admin en Supabase.';
+  inp.focus();
+}
+
+// ---------------- buscador ----------------
+var _resActual = [], _resIdx = -1;
+function buscar(){
+  var q = document.getElementById('q-cli').value || '';
+  var cont = document.getElementById('resultados');
+  var info = document.getElementById('info-busq');
+  var tokens = norm(q).split(' ').filter(Boolean);
+  _resIdx = -1;
+
+  if(!q.trim() || (tokens.join('').length < 2 && !/^\d+$/.test(q.trim()))){
+    cont.style.display = 'none'; cont.innerHTML = '';
+    info.textContent = CLIENTES.length + ' clientes disponibles. Escribe al menos 2 letras.';
+    _resActual = [];
+    return;
+  }
+
+  // Todas las palabras deben aparecer (en nombre comercial, razon social o codigo)
+  var lista = CLIENTES.filter(function(c){
+    for(var i=0;i<tokens.length;i++){ if(c._s.indexOf(tokens[i]) < 0) return false; }
+    return true;
+  });
+
+  // Orden: primero codigo exacto, luego los que empiezan por lo buscado, luego alfabetico
+  var q0 = tokens[0];
+  lista.sort(function(a,b){
+    var pa = (a.codigo === q.trim().padStart(4,'0')) ? 0 : (norm(a.nombre_comercial).indexOf(q0)===0 || norm(a.nombre).indexOf(q0)===0 ? 1 : 2);
+    var pb = (b.codigo === q.trim().padStart(4,'0')) ? 0 : (norm(b.nombre_comercial).indexOf(q0)===0 || norm(b.nombre).indexOf(q0)===0 ? 1 : 2);
+    if(pa !== pb) return pa - pb;
+    return (a.nombre_comercial||a.nombre||'').localeCompare(b.nombre_comercial||b.nombre||'');
+  });
+
+  _resActual = lista.slice(0, MAX_RES);
+  info.textContent = lista.length + ' resultado' + (lista.length===1?'':'s') +
+    (lista.length > MAX_RES ? ' (se muestran los ' + MAX_RES + ' primeros, afina la búsqueda)' : '');
+
+  if(!lista.length){
+    cont.innerHTML = '<div class="vacio">No hay clientes que coincidan.</div>';
+    cont.style.display = 'block';
+    return;
+  }
+  cont.innerHTML = _resActual.map(function(c, i){
+    var principal = c.nombre_comercial || c.nombre || '(sin nombre)';
+    var fiscal = (c.nombre && c.nombre !== principal) ? c.nombre : '';
+    return '<div class="res" data-i="'+i+'">'+
+      '<span class="res-cod">'+resaltar(c.codigo, tokens)+'</span>'+
+      '<div><div class="res-nom">'+resaltar(principal, tokens)+'</div>'+
+      (fiscal ? '<div class="res-fis">'+resaltar(fiscal, tokens)+'</div>' : '')+'</div>'+
+      '<span class="res-pob">'+esc(c.poblacion||'')+'</span>'+
+    '</div>';
+  }).join('');
+  cont.style.display = 'block';
+}
+function marcarRes(){
+  document.querySelectorAll('#resultados .res').forEach(function(el, i){
+    el.classList.toggle('sel', i === _resIdx);
+    if(i === _resIdx) el.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+// ---------------- ficha ----------------
+function dato(lbl, valorHtml){
+  var vacio = !valorHtml;
+  return '<div class="dato"><div class="lbl">'+lbl+'</div><div class="val'+(vacio?' vac':'')+'">'+(vacio?'—':valorHtml)+'</div></div>';
+}
+function seleccionarCliente(c){
+  _clienteSel = c;
+  document.getElementById('resultados').style.display = 'none';
+  document.getElementById('bloque-buscador').style.display = 'none';
+
+  var principal = c.nombre_comercial || c.nombre || '(sin nombre)';
+  var email = emailReal(c.email);
+  var tipoIva = {I:'IVA normal', R:'Recargo de equivalencia', E:'Exento'}[c.tipo_iva] || (c.tipo_iva||'');
+  var html =
+    '<div class="ficha-head">'+
+      '<div>'+
+        '<h2>'+esc(principal)+'</h2>'+
+        (c.nombre && c.nombre!==principal ? '<div class="fiscal">'+esc(c.nombre)+'</div>' : '')+
+      '</div>'+
+      '<div>'+
+        '<span class="chip">Código '+esc(c.codigo)+'</span>'+
+        '<span class="chip '+(c.puede_acceder?'si':'no')+'">'+(c.puede_acceder?'Acceso web activo':'Sin acceso web')+'</span>'+
+      '</div>'+
+    '</div>'+
+    '<div class="datos">'+
+      dato('Código', esc(c.codigo))+
+      dato('Razón social', esc(c.nombre||''))+
+      dato('Nombre comercial', esc(c.nombre_comercial||''))+
+      dato('Población', esc(c.poblacion||''))+
+      dato('Teléfono 1', telLink(c.telefono))+
+      dato('Teléfono 2', telLink(c.telefono2))+
+      dato('Teléfono 3', telLink(c.telefono3))+
+      dato('Email', email ? '<a href="mailto:'+esc(email)+'">'+esc(email)+'</a>' : '')+
+      dato('Tarifa', (c.tarifa!=null ? 'Tarifa '+esc(c.tarifa) : ''))+
+      dato('Tipo de IVA', esc(tipoIva))+
+    '</div>'+
+    '<div class="ficha-acc">'+
+      '<button class="btn-pri" type="button" disabled title="Próximamente">&#128722; Hacer pedido para este cliente</button>'+
+      '<button class="btn-sec" type="button" onclick="cambiarCliente()">&#8592; Cambiar de cliente</button>'+
+    '</div>';
+  var f = document.getElementById('ficha');
+  f.innerHTML = html;
+  f.style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function cambiarCliente(){
+  _clienteSel = null;
+  document.getElementById('ficha').style.display = 'none';
+  document.getElementById('bloque-buscador').style.display = 'block';
+  var inp = document.getElementById('q-cli');
+  inp.focus(); inp.select();
+  buscar();
+}
+
+// ---------------- eventos ----------------
 document.getElementById('adm-email').addEventListener('keydown', function(e){
   if(e.key==='Enter'){ e.preventDefault(); document.getElementById('adm-pass').focus(); }
 });
 document.getElementById('adm-pass').addEventListener('keydown', function(e){
   if(e.key==='Enter'){ e.preventDefault(); loginAdmin(); }
 });
+document.getElementById('q-cli').addEventListener('input', buscar);
+document.getElementById('q-cli').addEventListener('keydown', function(e){
+  if(!_resActual.length) return;
+  if(e.key==='ArrowDown'){ e.preventDefault(); _resIdx = Math.min(_resIdx+1, _resActual.length-1); marcarRes(); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); _resIdx = Math.max(_resIdx-1, 0); marcarRes(); }
+  else if(e.key==='Enter'){
+    e.preventDefault();
+    var i = _resIdx >= 0 ? _resIdx : (_resActual.length===1 ? 0 : -1);
+    if(i >= 0) seleccionarCliente(_resActual[i]);
+  }
+});
+document.getElementById('resultados').addEventListener('click', function(e){
+  var el = e.target.closest('.res'); if(!el) return;
+  seleccionarCliente(_resActual[parseInt(el.getAttribute('data-i'),10)]);
+});
 
-// Si se cierra la sesion en otra pestaña, volver al login
 sb.auth.onAuthStateChange(function(event){
   if(event === 'SIGNED_OUT') mostrar('login');
 });
