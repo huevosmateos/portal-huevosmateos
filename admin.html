@@ -50,7 +50,9 @@ main{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:40px 20px}
 .panel-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid var(--yema)}
 .panel-head h1{font-size:32px;color:var(--azul);margin:0}
 .panel-head p{margin:0;color:var(--gris);font-size:14px}
-.tabs{display:flex;gap:8px;margin-bottom:18px}
+.tabs{display:flex;gap:8px;margin-bottom:18px;align-items:center;flex-wrap:wrap}
+.acc-top{display:none;margin-left:auto;gap:10px;flex-wrap:wrap}
+.acc-top.on{display:flex}
 .tab{background:#fff;border:1px solid var(--linea);color:var(--gris);padding:9px 18px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
 .tab.activo{background:var(--azul);border-color:var(--azul);color:#fff}
 .tab:disabled{opacity:.55;cursor:not-allowed}
@@ -74,7 +76,7 @@ main{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:40px 20px}
 mark{background:#fff1c2;color:inherit;padding:0 1px;border-radius:2px}
 
 /* FICHA */
-#ficha{display:none;margin-top:20px}
+#ficha{display:none}
 .ficha-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
 .ficha-head h2{color:var(--azul);font-size:26px;margin:0 0 2px}
 .ficha-head .fiscal{color:var(--gris);font-size:14px}
@@ -108,6 +110,7 @@ mark{background:#fff1c2;color:inherit;padding:0 1px;border-radius:2px}
   .res-pob{grid-column:2;text-align:left}
   .ficha-head h2{font-size:21px}
   .btn-pri,.btn-sec{width:100%}
+  .acc-top{margin-left:0;width:100%}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -162,6 +165,10 @@ mark{background:#fff1c2;color:inherit;padding:0 1px;border-radius:2px}
     <div class="tabs">
       <button class="tab activo" type="button">&#128269; Buscar cliente</button>
       <button class="tab" type="button" disabled title="Próximamente">&#128666; Buscar por ruta</button>
+      <div class="acc-top" id="acc-top">
+        <button class="btn-pri" type="button" onclick="hacerPedido()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Hacer pedido para este cliente</button>
+        <button class="btn-sec" type="button" onclick="cambiarCliente()">&#8592; Cambiar de cliente</button>
+      </div>
     </div>
 
     <div class="tarjeta" id="bloque-buscador">
@@ -287,6 +294,9 @@ async function cerrarSesion(){
   try{ sessionStorage.removeItem('hm_admin_cliente'); }catch(e){}
   await sb.auth.signOut();
   _adminEmail = ''; CLIENTES = []; _clienteSel = null;
+  document.getElementById('acc-top').classList.remove('on');
+  document.getElementById('ficha').style.display = 'none';
+  document.getElementById('bloque-buscador').style.display = 'block';
   mostrar('login');
 }
 
@@ -420,14 +430,11 @@ function seleccionarCliente(c){
       dato('Email', email ? '<a href="mailto:'+esc(email)+'">'+esc(email)+'</a>' : '')+
       dato('Tarifa', (c.tarifa!=null ? 'Tarifa '+esc(c.tarifa) : ''))+
       dato('Tipo de IVA', esc(tipoIva))+
-    '</div>'+
-    '<div class="ficha-acc">'+
-      '<button class="btn-pri" type="button" onclick="hacerPedido()">&#128722; Hacer pedido para este cliente</button>'+
-      '<button class="btn-sec" type="button" onclick="cambiarCliente()">&#8592; Cambiar de cliente</button>'+
     '</div>';
   var f = document.getElementById('ficha');
   f.innerHTML = html;
   f.style.display = 'block';
+  document.getElementById('acc-top').classList.add('on');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 // Abre la tienda con precios como si este cliente se hubiera logueado
@@ -440,6 +447,7 @@ function cambiarCliente(){
   _clienteSel = null;
   try{ sessionStorage.removeItem('hm_admin_cliente'); }catch(e){}
   document.getElementById('ficha').style.display = 'none';
+  document.getElementById('acc-top').classList.remove('on');
   document.getElementById('bloque-buscador').style.display = 'block';
   var inp = document.getElementById('q-cli');
   inp.focus(); inp.select();
