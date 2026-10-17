@@ -200,6 +200,8 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 .cart-total-val{font-size:22px;font-weight:700;color:#0d0190}
 .cart-btn-pedido{width:100%;background:#0d0190;color:#fff;border:none;padding:14px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
 .cart-btn-pedido:hover{background:#1b16c9}
+.cart-servicio{display:flex;align-items:center;gap:8px;background:#eafaf0;border:1px solid #b9e6c9;color:#1a7a4a;border-radius:8px;padding:9px 12px;font-size:14px;margin-bottom:12px}
+.cart-servicio b{color:#0f5c36;text-transform:capitalize}
 .cart-btn-vaciar{width:100%;background:none;border:1px solid #e7e7ef;color:#6b6b78;padding:9px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px}
 .card-addwrap{border-top:1px solid #e7e7ef}
 .card-addbtn{width:100%;background:#0d0190;color:#fff;border:none;padding:9px 0;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
@@ -308,7 +310,7 @@ function _marcarFamilia(f){
   return hecho;
 }
 var PRODUCTOS=[], ORDEN_FAM=[], IMG={};
-var _tarifa=1, _clienteCod='', _clienteNombre='', _tipoIva='I', _ofertas={}, _verCache=Date.now();
+var _tarifa=1, _clienteCod='', _clienteNombre='', _tipoIva='I', _codigoRuta=null, _ofertas={}, _verCache=Date.now();
 function _buildIndex(){
   IMG={};
   PRODUCTOS.forEach(function(p){
@@ -424,7 +426,7 @@ sb.auth.getSession().then(async function(r){
     var adm = await sb.rpc('es_admin');
     if(adm.error || adm.data !== true){ _salirModoAdmin(); return; }
     _adminEmail = session.user.email || '';
-    chk = await sb.from('clientes').select('codigo,tarifa,puede_acceder,nombre,nombre_comercial,tipo_iva,email').eq('codigo', _adminCli).single();
+    chk = await sb.from('clientes').select('codigo,tarifa,puede_acceder,nombre,nombre_comercial,tipo_iva,email,codigo_ruta').eq('codigo', _adminCli).single();
     if(chk.error || !chk.data){
       alert('No se pudo cargar el cliente '+_adminCli+'. Vuelve a seleccionarlo en el panel.');
       _salirModoAdmin();
@@ -438,7 +440,7 @@ sb.auth.getSession().then(async function(r){
     if(!session || !session.user){ location.replace('tienda.html'+location.search); return; }
     _sbEmail = session.user.email;
     // 1. Obtener datos del cliente (codigo, tarifa, autorizacion)
-    chk = await sb.from('clientes').select('codigo,tarifa,puede_acceder,nombre,tipo_iva').eq('email', _sbEmail.toLowerCase()).single();
+    chk = await sb.from('clientes').select('codigo,tarifa,puede_acceder,nombre,tipo_iva,codigo_ruta').eq('email', _sbEmail.toLowerCase()).single();
     if(chk.error || !chk.data || !chk.data.puede_acceder){
       await sb.auth.signOut();
       location.replace('tienda.html');
@@ -448,7 +450,8 @@ sb.auth.getSession().then(async function(r){
   _clienteCod = chk.data.codigo || '';
   _clienteNombre = chk.data.nombre || '';
   _tipoIva = chk.data.tipo_iva || 'I';
-  _tarifa = chk.data.tarifa !== null && chk.data.tarifa !== undefined ? parseInt(chk.data.tarifa) : 1;
+  _codigoRuta = (chk.data.codigo_ruta !== null && chk.data.codigo_ruta !== undefined) ? parseInt(chk.data.codigo_ruta, 10) : null;
+  _tarifa =chk.data.tarifa !== null && chk.data.tarifa !== undefined ? parseInt(chk.data.tarifa) : 1;
   // 2. Cargar productos y precios especiales
   var ok = await _cargarCatalogo(false);
   if(!ok) return;
@@ -727,6 +730,7 @@ window.addEventListener('resize',function(){
   <div class="cart-head"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Mi pedido</h3><button class="cart-close" onclick="cerrarCarrito()">&times;</button></div>
   <div class="cart-items" id="cart-items"><p class="cart-vacio">El carrito est&#225; vac&#237;o</p></div>
   <div class="cart-foot">
+    <div class="cart-servicio" id="cart-servicio" style="display:none"></div>
     <div class="cart-total" style="margin-bottom:16px"><strong>Total Iva incluído:</strong><span class="cart-total-val" id="cart-total-impuestos" style="font-size:18px">0,00 &#8364;</span></div>
     <button class="cart-btn-pedido" id="btn-seguir-comprando" onclick="cerrarCarrito()" style="background:#fff;color:#0d0190;border:2px solid #0d0190;margin-bottom:8px;padding:9px 14px">Seguir Comprando</button>
     <button class="cart-btn-pedido" id="btn-confirmar-pedido" onclick="enviarPedido()">&#10003; Confirmar Pedido</button>
@@ -854,6 +858,31 @@ function abrirCarrito(){
   document.getElementById('cart-panel').classList.add('abierto');
   document.getElementById('cart-overlay').classList.add('visible');
   _renderCarrito();
+  _mostrarDiaServicio();
+}
+
+/* ===== DIA DE SERVICIO =====
+   Lo calcula la funcion dia_servicio de Supabase segun la ruta del cliente,
+   la hora (corte 03:00) y los dias laborables (2 o mas albaranes en el ERP). */
+async function _calcularDiaServicio(){
+  var r = await sb.rpc('dia_servicio', { p_ruta: _codigoRuta });
+  if(r.error){ console.error('dia_servicio', r.error); return null; }
+  return r.data || null;   // 'AAAA-MM-DD'
+}
+function _textoFecha(iso){
+  if(!iso) return '';
+  var p = String(iso).slice(0,10).split('-');
+  var d = new Date(+p[0], +p[1]-1, +p[2]);
+  var dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  return dias[d.getDay()]+' '+p[2]+'/'+p[1]+'/'+p[0];
+}
+async function _mostrarDiaServicio(){
+  var el = document.getElementById('cart-servicio'); if(!el) return;
+  if(!Object.keys(_carrito).length){ el.style.display='none'; return; }
+  var f = await _calcularDiaServicio();
+  if(!f){ el.style.display='none'; return; }
+  el.innerHTML = '&#128666; Entrega prevista: <b>'+esc(_textoFecha(f))+'</b>';
+  el.style.display = 'flex';
 }
 function cerrarCarrito(){
   document.getElementById('cart-panel').classList.remove('abierto');
@@ -865,6 +894,7 @@ function _renderCarrito(){
   if(!keys.length){
     el.innerHTML='<p class="cart-vacio">El carrito est&#225; vac&#237;o</p>';
     document.getElementById('cart-total-impuestos').textContent='0,00 €';
+    var sv=document.getElementById('cart-servicio'); if(sv) sv.style.display='none';
     return;
   }
 
@@ -932,6 +962,9 @@ async function enviarPedido(){
   var totalStr=total.toFixed(2).replace('.',',');
 
   try {
+    // 0. Dia de servicio (se calcula en el momento de confirmar)
+    var fechaServicio = await _calcularDiaServicio();
+
     // 1. Guardar pedido en Supabase
     var filaPedido={
       cliente_email: _sbEmail,
@@ -939,6 +972,7 @@ async function enviarPedido(){
       lineas: lineas,
       total: total
     };
+    if(fechaServicio) filaPedido.fecha_servicio = fechaServicio;
     // En modo admin se guarda quien ha hecho el pedido en nombre del cliente
     if(_adminCli) filaPedido.creado_por = _adminEmail;
     var ins=await sb.from('pedidos').insert(filaPedido).select('id').single();
@@ -965,6 +999,8 @@ async function enviarPedido(){
           tipo_iva: _tipoIva,
           lineas: lineas,
           total: totalStr,
+          fecha_servicio: fechaServicio || '',
+          fecha_servicio_texto: fechaServicio ? _textoFecha(fechaServicio) : '',
           creado_por: _adminCli ? _adminEmail : ''
         })
       }
@@ -986,9 +1022,10 @@ async function enviarPedido(){
     cerrarCarrito();
     var aviso=document.createElement('div');
     aviso.style.cssText='position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a7a4a;color:#fff;padding:18px 32px;border-radius:10px;font-size:15px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);text-align:center;max-width:90%';
+    var txtServicio = fechaServicio ? (' Entrega prevista: '+_textoFecha(fechaServicio)+'.') : '';
     aviso.textContent=_adminCli
-      ? ('\u2713 Pedido confirmado para '+_clienteCod+' \u00b7 '+(_clienteNomCom||_clienteNombre)+'.')
-      : '\u2713 Pedido confirmado. Recibirás un email con el resumen.';
+      ? ('\u2713 Pedido confirmado para '+_clienteCod+' \u00b7 '+(_clienteNomCom||_clienteNombre)+'.'+txtServicio)
+      : ('\u2713 Pedido confirmado.'+txtServicio+' Recibirás un email con el resumen.');
     document.body.appendChild(aviso);
     setTimeout(function(){aviso.remove();},6000);
 
