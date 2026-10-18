@@ -154,6 +154,24 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
   .tab{padding:7px 14px;font-size:13px}
   .promo-head h2{font-size:17px}
 }
+/* === CERRAR SESION EN EL PIE (zona Informacion, a la derecha de los enlaces) === */
+.pie-info-fila{display:flex;align-items:center;gap:28px}
+.pie-info-fila ul{margin:0}
+.pie-salir{display:inline-block;color:#fff!important;font-weight:700;font-size:14px;border:1px solid rgba(255,255,255,.55);border-radius:8px;padding:8px 14px;white-space:nowrap}
+.pie-salir:hover{background:rgba(255,255,255,.12)}
+/* === BUSCADOR RESALTADO === */
+.vistas .buscador input{border:2px solid var(--azul);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%230d0190' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.3-4.3'/%3E%3C/svg%3E") no-repeat 14px center;padding-left:44px;font-weight:600;color:var(--txt);box-shadow:0 0 0 4px rgba(245,179,1,.35)}
+.vistas .buscador input::placeholder{color:#55557a;font-weight:500}
+.vistas .buscador input:focus{outline:none;border-color:var(--azul);box-shadow:0 0 0 4px rgba(245,179,1,.7)}
+/* === MOVIL CON EL CLIENTE YA LOGUEADO: fuera el menu de navegacion, el boton de cerrar sesion
+   y el boton "Filtrar por familia" para dejar sitio a pestañas y buscador === */
+@media(max-width:600px){
+  .nav{display:none}
+  .nav-logged button{display:none}
+  #btn-fam{display:none!important}
+  .vistas{margin:10px 0 12px}
+  .vistas .buscador input{font-size:16px;padding-top:12px;padding-bottom:12px}
+}
 .precio{color:var(--azul);font-weight:700;font-size:18px;margin:0}.precio small{color:var(--gris);font-weight:400;font-size:12px}
 
 /* ===== RESPONSIVE MÓVIL ===== */
@@ -646,6 +664,7 @@ function mostrarLoginWidget(){
   var w=document.getElementById('nav-login-widget'); if(!w)return;
   if(_adminCli){
     var nom = _clienteNomCom || _clienteNombre || '';
+    var ps=document.getElementById('pie-cerrar-sesion'); if(ps) ps.innerHTML='&#8592; Volver al panel';
     w.innerHTML="<div class='nav-logged'><span>&#128100; Cliente: <b>"+esc(_clienteCod)+" &middot; "+esc(nom)+"</b></span><button type='button' onclick='cerrarSesion()'>Cambiar cliente</button></div>";
     return;
   }
@@ -911,11 +930,14 @@ window.addEventListener('resize',function(){
 
     <div class="pie-info-block">
       <h4>Informacion</h4>
+      <div class="pie-info-fila">
       <ul>
         <li><a href="index.html" onclick="return _navGuard(event,'index.html')">Inicio</a></li>
         <li><a href="tienda.html" onclick="return _navGuard(event,'tienda.html')">Tienda</a></li>
         <li><a href="contacto.html" onclick="return _navGuard(event,'contacto.html')">Contacto</a></li>
       </ul>
+      <a href="#" id="pie-cerrar-sesion" class="pie-salir" onclick="cerrarSesion();return false;">&#x23FB; Cerrar sesi&oacute;n</a>
+      </div>
     </div>
   </div>
 
