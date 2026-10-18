@@ -503,18 +503,43 @@ function _fmtEur(n){return Number(n).toFixed(2).replace('.',',')+' \u20ac';}
 function _fmtFecha(iso){if(!iso)return '';var p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
 function _nombreRegalo(pr){var g=_prodPorNum(pr.regaloCod);return g?g.nombre:('art\u00edculo '+pr.regaloCod);}
 // Texto de una condicion: "Desde 6 cajas: 1,20 € / Ud + 1 caja de regalo por cada 6"
-function _textoCondicion(pr,unidad,largo){
+// Unidades que lleva una caja (unidades fijas, o kilos si se vende a peso)
+function _udsCaja(p){ return p ? (p.upc>0 ? p.upc : (p.peso>0 ? p.peso : 1)) : 0; }
+function _numTarifa(p){ return parseFloat(String(getPrecioTarifa(p)||'0').replace(',','.'))||0; }
+// PRECIO FINAL por unidad de una promocion para el producto p:
+//  - sin regalo: el precio promo
+//  - regalo del mismo producto (o de la misma promo): importe cobrado / (unidades cobradas + regaladas)
+//  - regalo de otro producto: la caja regalada se valora a precio de tarifa del cliente, se descuenta
+//    del importe cobrado y se divide entre las unidades (litros) cobradas
+// Como el regalo es "por cada X cajas", el precio final es el mismo para cualquier multiplo.
+function _precioFinal(pr,p){
+  if(!p) return null;
+  var precio=pr.arts[_codNum(p.codigo)]; if(precio==null) precio=pr.precio; if(precio==null) return null;
+  if(!(pr.regaloCajas>0 && pr.regaloCod!==null)) return precio;
+  var uds=pr.min*_udsCaja(p), cobrado=uds*precio;
+  var g=(pr.regaloCod===_codNum(p.codigo))?p:_prodPorNum(pr.regaloCod);
+  if(!g) return null;
+  var udsRegalo=pr.regaloCajas*_udsCaja(g);
+  if(pr.arts[pr.regaloCod]!==undefined || g===p) return cobrado/(uds+udsRegalo);
+  return (cobrado-udsRegalo*_numTarifa(g))/uds;
+}
+function _textoCondicion(pr,p,largo){
+  var unidad=p?(p.unidad||''):'';
+  var precio=p?pr.arts[_codNum(p.codigo)]:null; if(precio==null) precio=pr.precio;
   var t=(largo?'Desde ':'')+_fmtNum(pr.min)+' caja'+(pr.min==1?'':'s');
-  if(pr.precio!=null) t+=': '+_fmtEur(pr.precio)+(unidad?' / '+unidad:'');
-  if(pr.regaloCajas>0 && pr.regaloCod!==null){
+  if(precio!=null) t+=': '+_fmtEur(precio)+(largo&&unidad?' / '+unidad:'');
+  var conRegalo=pr.regaloCajas>0 && pr.regaloCod!==null;
+  if(conRegalo){
     t+=largo ? (' + '+_fmtNum(pr.regaloCajas)+' caja'+(pr.regaloCajas==1?'':'s')+' de regalo de '+_nombreRegalo(pr)+' por cada '+_fmtNum(pr.min)) : ' + regalo';
   }
+  var fin=_precioFinal(pr,p);
+  if(fin!=null && (largo || conRegalo)) t+=(largo?'  \u2192  PRECIO FINAL ':' \u2192 final ')+_fmtEur(fin)+(unidad?' / '+unidad:'');
   return t;
 }
 function _tagPromo(p){
   var ps=_promosDe(p.codigo); if(!ps.length) return '';
   var sumar=ps.some(function(pr){return pr.sumar && Object.keys(pr.arts).length>1;});
-  return '<p class=\'promo-tag\'>&#127991; PROMO '+esc(ps.map(function(pr){return _textoCondicion(pr,'',false);}).join(' \u00b7 '))+(sumar?' (sumando variedades)':'')+'</p>';
+  return '<p class=\'promo-tag\'>&#127991; PROMO '+esc(ps.map(function(pr){return _textoCondicion(pr,p,false);}).join(' \u00b7 '))+(sumar?' (sumando variedades)':'')+'</p>';
 }
 // Estado de las promociones segun lo que hay en el carrito (solo cuentan las cajas completas)
 function _estadoPromos(){
@@ -790,7 +815,7 @@ function pintar(){
       var sumar=pr0.sumar && Object.keys(pr0.arts).length>1;
       var hasta=g.promos.map(function(x){return x.hasta;}).filter(Boolean).sort()[0]||'';
       hp.push('<div class=\'promo-head\'><h2>&#127991; '+esc(pr0.nombre)+'</h2><ul>'+
-        g.promos.map(function(x){return '<li>'+esc(_textoCondicion(x,unidad,true))+'</li>';}).join('')+
+        g.promos.map(function(x){return '<li>'+esc(_textoCondicion(x,prods[0],true))+'</li>';}).join('')+
         (sumar?'<li>Se suman las cajas de todas las variedades de esta promoci\u00f3n.</li>':'')+
         '</ul>'+(hasta?'<p class=\'promo-vig\'>V\u00e1lida hasta el '+_fmtFecha(hasta)+'</p>':'')+'</div>');
       hp.push('<div class=\'grid\'>'+prods.map(function(p){pintados[p.codigo]=true;return tarjeta(p);}).join('')+'</div>');
