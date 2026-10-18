@@ -546,8 +546,9 @@ function _estadoPromos(){
     var clave=pr.sumar?('S'+pr.id):('N'+pr.id+'_'+n);
     if(vistos[clave]) return; vistos[clave]=true;
     var num=Math.floor(e.cnt/pr.min)*pr.regaloCajas; if(num<=0) return;
-    var r=regalos[pr.regaloCod]||(regalos[pr.regaloCod]={cajas:0, promos:[]});
+    var r=regalos[pr.regaloCod]||(regalos[pr.regaloCod]={cajas:0, promos:[], arts:{}});
     r.cajas+=num; if(r.promos.indexOf(pr.nombre)<0) r.promos.push(pr.nombre);
+    Object.keys(pr.arts).forEach(function(a){ r.arts[a]=true; });
   });
   // Avisos: promociones empezadas a las que les faltan cajas
   _gruposPromo().forEach(function(g){
@@ -931,9 +932,49 @@ function _lineasRegalo(){
   var r=_estadoPromos().regalos, out=[];
   Object.keys(r).forEach(function(n){
     var p=_prodPorNum(Number(n));
-    out.push({p:p, codNum:Number(n), cajas:r[n].cajas, promos:r[n].promos});
+    out.push({p:p, codNum:Number(n), cajas:r[n].cajas, promos:r[n].promos, arts:r[n].arts});
   });
   return out;
+}
+// Coloca cada regalo justo debajo del producto que lo genera (la ultima linea del carrito
+// con un articulo de esa promocion). Devuelve {clave_carrito:[regalos]} y los que no tengan sitio.
+function _regalosPorLinea(keys){
+  var anclas={}, sueltos=[];
+  _lineasRegalo().forEach(function(g){
+    var ancla=null;
+    keys.forEach(function(k){
+      var it=_carrito[k]; if(!it || (it.modo||'caja')!=='caja') return;
+      if(g.arts[_codNum(it.p.codigo)]) ancla=k;
+    });
+    if(ancla) (anclas[ancla]=anclas[ancla]||[]).push(g); else sueltos.push(g);
+  });
+  return {anclas:anclas, sueltos:sueltos};
+}
+function _htmlRegalo(g){
+  var gp=g.p;
+  var gimg=(gp&&gp.imgs&&gp.imgs.length)?'<img class="cart-item-img" src="'+gp.imgs[0]+'" alt="" onerror="this.style.display=\'none\'">':'<div class="cart-item-img"></div>';
+  return '<div class="cart-item cart-regalo">'+gimg+
+    '<div class="cart-item-info"><strong>&#127873; REGALO &middot; '+esc(gp?gp.nombre:('Art\u00edculo '+g.codNum))+'</strong><span>'+_fmtNum(g.cajas)+' caja'+(g.cajas==1?'':'s')+(gp&&gp.envase?' &middot; '+esc(gp.envase):'')+'</span><span style="display:block">'+esc(g.promos.join(', '))+'</span></div>'+
+    '<div class="cart-item-ctrl"><span class="cart-item-precio">0,00&nbsp;€</span></div></div>';
+}
+// Linea de regalo para el pedido: mismo codigo, las unidades de esas cajas y precio 0
+function _lineaPedidoRegalo(g){
+  var gp=g.p;
+  return {
+    codigo: gp ? gp.codigo : String(g.codNum),
+    nombre: (gp ? gp.nombre : ('Articulo '+g.codNum))+' (REGALO PROMO)',
+    envase: 'REGALO '+(gp&&gp.envase?gp.envase:''),
+    cajas: g.cajas,
+    uds_caja: gp ? (gp.upc||0) : 0,
+    peso_medio: gp ? (gp.peso||0) : 0,
+    grupo_iva: gp ? (gp.grupo_iva||1) : 1,
+    precio_ud: '0,00',
+    subtotal: '0,00',
+    estimado: gp ? _esEstimado(gp) : false,
+    modo: 'caja',
+    regalo: true,
+    promo: g.promos.join(', ')
+  };
 }
 /* Subtotal correcto: cajas x unidades_por_caja x precio/ud (o cajas x peso x precio/kg)
    En modo fraccion: si la unidad de venta es fija (docenas, unidades...) la cantidad YA esta
@@ -1095,6 +1136,7 @@ function _renderCarrito(){
   var REC = {1: 0.052, 2: 0.014, 3: 0.005};
 
   var total=0; var totalImp=0; var html='';
+  var _reg=_regalosPorLinea(keys);
   keys.forEach(function(key){
     var item=_carrito[key];var p=item.p;var modo=item.modo||'caja';var pr=_precioNum(p,modo);var sub=_subtotal(p,item.qty,modo);
     total+=sub;
@@ -1115,15 +1157,10 @@ function _renderCarrito(){
       '<div class="cart-item-ctrl"><span class="cart-item-precio">'+estim+sub.toFixed(2).replace('.',',')+'&nbsp;€</span>'+
       '<div class="cqty-ctrl"><button class="cqty-btn" onclick="_cchg(\''+key+'\',-1)">&minus;</button><span class="cqty-val">'+item.qty+'</span><button class="cqty-btn" onclick="_cchg(\''+key+'\',1)">+</button></div>'+
       '<span style="font-size:11px;color:#6b6b78">'+detalle+'</span></div></div>';
+    // Regalo de la promocion justo debajo del producto que lo genera (se añade solo, a 0,00)
+    (_reg.anclas[key]||[]).forEach(function(g){ html+=_htmlRegalo(g); });
   });
-  // Regalos de las promociones (se añaden solos, a 0,00)
-  _lineasRegalo().forEach(function(g){
-    var gp=g.p;
-    var gimg=(gp&&gp.imgs&&gp.imgs.length)?'<img class="cart-item-img" src="'+gp.imgs[0]+'" alt="" onerror="this.style.display=\'none\'">':'<div class="cart-item-img"></div>';
-    html+='<div class="cart-item cart-regalo">'+gimg+
-      '<div class="cart-item-info"><strong>&#127873; REGALO &middot; '+esc(gp?gp.nombre:('Art\u00edculo '+g.codNum))+'</strong><span>'+_fmtNum(g.cajas)+' caja'+(g.cajas==1?'':'s')+(gp&&gp.envase?' &middot; '+esc(gp.envase):'')+'</span><span style="display:block">'+esc(g.promos.join(', '))+'</span></div>'+
-      '<div class="cart-item-ctrl"><span class="cart-item-precio">0,00&nbsp;€</span></div></div>';
-  });
+  _reg.sueltos.forEach(function(g){ html+=_htmlRegalo(g); });
   _estadoPromos().avisos.forEach(function(a){ html+='<p class="cart-aviso-promo">&#127991; '+esc(a)+'</p>'; });
   el.innerHTML=html;
   var sufijo = '';
@@ -1142,6 +1179,7 @@ async function enviarPedido(){
   btn.disabled=true; btn.textContent='Enviando...';
 
   var lineas=[]; var total=0;
+  var _regP=_regalosPorLinea(keys);
   keys.forEach(function(key){
     var item=_carrito[key]; var p=item.p; var modo=item.modo||'caja';
     var sub=_subtotal(p,item.qty,modo); total+=sub;
@@ -1160,26 +1198,10 @@ async function enviarPedido(){
       modo: modo,
       promo: (function(){var e=_promoAplicada(p,modo);return e?e.promo.nombre:'';})()
     });
+    // Regalo justo debajo del producto que lo genera
+    (_regP.anclas[key]||[]).forEach(function(g){ lineas.push(_lineaPedidoRegalo(g)); });
   });
-  // Lineas de regalo: mismo codigo, las unidades de esas cajas y precio 0
-  _lineasRegalo().forEach(function(g){
-    var gp=g.p;
-    lineas.push({
-      codigo: gp ? gp.codigo : String(g.codNum),
-      nombre: (gp ? gp.nombre : ('Articulo '+g.codNum))+' (REGALO PROMO)',
-      envase: 'REGALO '+(gp&&gp.envase?gp.envase:''),
-      cajas: g.cajas,
-      uds_caja: gp ? (gp.upc||0) : 0,
-      peso_medio: gp ? (gp.peso||0) : 0,
-      grupo_iva: gp ? (gp.grupo_iva||1) : 1,
-      precio_ud: '0,00',
-      subtotal: '0,00',
-      estimado: gp ? _esEstimado(gp) : false,
-      modo: 'caja',
-      regalo: true,
-      promo: g.promos.join(', ')
-    });
-  });
+  _regP.sueltos.forEach(function(g){ lineas.push(_lineaPedidoRegalo(g)); });
 
   var totalStr=total.toFixed(2).replace('.',',');
 
