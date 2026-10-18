@@ -13,11 +13,11 @@ a{color:inherit;text-decoration:none}h1,h2,h3,h4{font-family:'Fraunces',Georgia,
 .top{background:#fff;border-bottom:1px solid var(--linea)}
 .top-inner{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 .top-left{display:flex;align-items:center;gap:18px}
-.logo{display:flex;align-items:center}.logo-img{height:120px;width:auto}
+.logo{display:flex;align-items:center}.logo-img{height:144px;width:auto}
 .logo-txt{font-family:'Fraunces',serif;font-size:26px;color:var(--azul)}.logo-txt b{color:var(--yema)}
 .top-info{display:flex;flex-direction:column;justify-content:center;line-height:1.35}
-.top-info .tel-label{color:var(--gris);font-size:13px}
-.top-info .tel-num{color:var(--azul);font-weight:700;font-size:15px}
+.top-info .tel-label{color:var(--gris);font-size:15.6px}
+.top-info .tel-num{color:var(--azul);font-weight:700;font-size:18px}
 .nav{background:var(--azul)}.nav-inner{max-width:1180px;margin:0 auto;padding:0 20px;display:flex;gap:6px}
 .nav a{color:#fff;padding:14px 20px;font-weight:500;letter-spacing:.04em;font-size:14px;text-transform:uppercase;border-bottom:3px solid transparent}
 .nav a:hover{background:rgba(255,255,255,.08)}.nav a.activo{border-bottom-color:var(--yema)}
@@ -155,10 +155,23 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
   .promo-head h2{font-size:17px}
 }
 /* === CERRAR SESION EN EL PIE (zona Informacion, a la derecha de los enlaces) === */
-.pie-info-fila{display:flex;align-items:center;gap:28px}
-.pie-info-fila ul{margin:0}
-.pie-salir{display:inline-block;color:#fff!important;font-weight:700;font-size:14px;border:1px solid rgba(255,255,255,.55);border-radius:8px;padding:8px 14px;white-space:nowrap}
-.pie-salir:hover{background:rgba(255,255,255,.12)}
+.pie-info-fila{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.pie-info-fila ul{margin:0;display:flex;flex-direction:column;gap:8px}
+.pie-info-fila li{margin:0}
+.pie-info-fila ul a,.pie-salir{display:inline-block;width:160px;text-align:center;color:#fff!important;font-weight:700;font-size:14px;border:1px solid rgba(255,255,255,.55);border-radius:8px;padding:8px 14px;white-space:nowrap;box-sizing:border-box}
+.pie-info-fila ul a:hover,.pie-salir:hover{background:rgba(255,255,255,.12)}
+.pie-salir{margin-left:auto}
+@media(max-width:600px){.pie-info-fila ul a,.pie-salir{min-width:0;width:145px;padding:8px 6px}}
+/* Dialogo de confirmacion para cerrar sesion */
+#dlg-salir{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center}
+#dlg-salir.on{display:flex}
+#dlg-salir .dlg-caja{background:#fff;border-radius:14px;padding:28px 24px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+#dlg-salir h3{color:var(--azul);margin:0 0 8px;font-family:'Fraunces',serif;font-size:22px}
+#dlg-salir p{color:var(--gris);font-size:14px;margin:0 0 20px}
+#dlg-salir .dlg-btns{display:flex;gap:10px}
+#dlg-salir button{flex:1;padding:12px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+#dlg-salir .dlg-si{background:var(--azul);color:#fff;border:2px solid var(--azul)}
+#dlg-salir .dlg-no{background:#fff;color:var(--azul);border:2px solid var(--azul)}
 /* === BUSCADOR RESALTADO === */
 .vistas .buscador input{border:2px solid var(--azul);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%230d0190' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.3-4.3'/%3E%3C/svg%3E") no-repeat 14px center;padding-left:44px;font-weight:600;color:var(--txt);box-shadow:0 0 0 4px rgba(245,179,1,.35)}
 .vistas .buscador input::placeholder{color:#55557a;font-weight:500}
@@ -178,9 +191,9 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 @media(max-width:600px){
   .top-inner{flex-wrap:wrap;gap:8px;padding:10px 14px}
   .top-left{gap:10px}
-  .logo-img{height:48px}
-  .top-info .tel-label{font-size:10px}
-  .top-info .tel-num{font-size:12px;display:block}
+  .logo-img{height:58px}
+  .top-info .tel-label{font-size:12px}
+  .top-info .tel-num{font-size:14.4px;display:block}
   .nav-inner{flex-wrap:wrap;gap:0;padding:0 10px}
   .nav a{padding:10px 12px;font-size:13px}
   .nav-buscador{order:10;width:100%;padding:6px 0 8px}
@@ -677,7 +690,15 @@ function cerrarSesion(){
     location.href = 'admin.html';   // el panel reabre la ficha de este cliente
     return;
   }
-  sb.auth.signOut().then(function(){ location.href='tienda.html'; });
+  // Cliente: pedir confirmacion antes de cerrar la sesion
+  var d=document.getElementById('dlg-salir');
+  if(d){ d.classList.add('on'); var b=document.getElementById('dlg-salir-no'); if(b) b.focus(); return; }
+  _cerrarSesionYa();
+}
+function _cerrarSesionYa(){ sb.auth.signOut().then(function(){ location.href='tienda.html'; }); }
+function _dlgSalir(si){
+  var d=document.getElementById('dlg-salir'); if(d) d.classList.remove('on');
+  if(si) _cerrarSesionYa();
 }
 // Franja amarilla fija arriba para que quede claro que es un pedido en nombre del cliente
 function _mostrarBannerAdmin(){
@@ -870,7 +891,7 @@ document.querySelector('.lb-x').addEventListener('click',cerrarLB);
 document.getElementById('lb').addEventListener('click',function(e){if(e.target===this)cerrarLB();});
 document.querySelector('.lb-prev').addEventListener('click',function(e){e.stopPropagation();LBi=(LBi-1+LB.length)%LB.length;lbShow();});
 document.querySelector('.lb-next').addEventListener('click',function(e){e.stopPropagation();LBi=(LBi+1)%LB.length;lbShow();});
-document.addEventListener('keydown',function(e){if(e.key==='Escape')cerrarLB();var l=document.getElementById('lb');if(!l.classList.contains('on')||LB.length<2)return;if(e.key==='ArrowLeft'){LBi=(LBi-1+LB.length)%LB.length;lbShow();}if(e.key==='ArrowRight'){LBi=(LBi+1)%LB.length;lbShow();}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){cerrarLB();var _d=document.getElementById('dlg-salir');if(_d&&_d.classList.contains('on'))_dlgSalir(false);}var l=document.getElementById('lb');if(!l.classList.contains('on')||LB.length<2)return;if(e.key==='ArrowLeft'){LBi=(LBi-1+LB.length)%LB.length;lbShow();}if(e.key==='ArrowRight'){LBi=(LBi+1)%LB.length;lbShow();}});
 document.getElementById('q').addEventListener('input',function(){pintar(); initMobile();});
 // === BUSCADOR EN MOVIL: al pulsar la lupa del teclado se cierra el teclado y suben
 // los resultados (se oculta la cabecera y queda visible el buscador arriba) ===
@@ -1367,6 +1388,18 @@ async function enviarPedido(){
 <a class="wsp-float" href="https://wa.me/34639755593?text=Hola%2C%20tengo%20una%20consulta%20sobre%20el%20cat%C3%A1logo%20de%20Huevos%20Mateos" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp">
   <svg viewBox="0 0 32 32"><path d="M16.001 2.667c-7.364 0-13.334 5.97-13.334 13.333 0 2.45.665 4.74 1.823 6.71l-1.93 7.044a1 1 0 0 0 1.224 1.224l7.045-1.93a13.27 13.27 0 0 0 5.172 1.045c7.364 0 13.334-5.97 13.334-13.333S23.365 2.667 16.001 2.667zm6.36 18.96c-.295.832-1.46 1.527-2.36 1.71-.63.127-1.45.228-4.21-.905-3.53-1.452-5.8-4.99-5.98-5.225-.176-.236-1.43-1.9-1.43-3.625s.9-2.575 1.22-2.93c.32-.355.7-.443.93-.443.235 0 .47.002.675.013.217.012.51-.083.798.61.295.71 1 2.448 1.09 2.625.09.176.15.385.03.617-.118.232-.178.376-.353.578-.176.2-.37.448-.53.6-.176.176-.36.367-.155.715.207.353.92 1.518 1.97 2.46 1.357 1.21 2.502 1.59 2.866 1.766.295.143.47.12.643-.072.205-.227.86-1 1.09-1.343.23-.343.46-.286.78-.172.32.114 2.03.957 2.378 1.13.348.176.578.265.663.41.087.146.087.84-.21 1.673z"/></svg>
 </a>
+
+<!-- Dialogo: ¿cerrar la sesion? -->
+<div id="dlg-salir" onclick="if(event.target===this)_dlgSalir(false)">
+  <div class="dlg-caja" role="dialog" aria-modal="true" aria-labelledby="dlg-salir-tit">
+    <h3 id="dlg-salir-tit">¿Desea cerrar la sesión?</h3>
+    <p>Tendrá que volver a identificarse para hacer pedidos.</p>
+    <div class="dlg-btns">
+      <button type="button" class="dlg-si" onclick="_dlgSalir(true)">Sí</button>
+      <button type="button" class="dlg-no" id="dlg-salir-no" onclick="_dlgSalir(false)">No</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal aviso carrito pendiente -->
 <div id="nav-guard-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
