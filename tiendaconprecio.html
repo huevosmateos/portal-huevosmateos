@@ -901,6 +901,27 @@ document.getElementById('fam-list').addEventListener('click',function(e){
   this.querySelectorAll('a').forEach(function(x){x.classList.remove('activo');});
   a.classList.add('activo'); pintar(); initMobile(); var c=document.getElementById('catalogo'); if(c)c.scrollTop=0;
 });
+// === CATEGORIAS DEL PIE: filtran la familia en la misma pagina (como el menu de familias)
+// y suben la pantalla hasta los resultados, sin recargar ===
+function _irAFamilia(fam){
+  var real=fam, n=norm(fam);
+  for(var i=0;i<ORDEN_FAM.length;i++){ if(norm(ORDEN_FAM[i])===n){ real=ORDEN_FAM[i]; break; } }
+  var qi=document.getElementById('q'); if(qi) qi.value='';
+  _activarVista(null);
+  _marcarFamilia(real);
+  pintar(); initMobile();
+  var c=document.getElementById('catalogo'); if(c) c.scrollTop=0;
+  var dest=document.querySelector('.vistas')||c;
+  var y=dest.getBoundingClientRect().top+window.pageYOffset-6;
+  window.scrollTo({top:Math.max(0,y),behavior:'smooth'});
+}
+document.addEventListener('click',function(e){
+  var a=e.target.closest ? e.target.closest('.pie-cats a') : null; if(!a) return;
+  var fam=''; try{ fam=new URL(a.getAttribute('href'),location.href).searchParams.get('fam')||''; }catch(x){}
+  if(!fam || !PRODUCTOS.length) return;   // si el catalogo aun no ha cargado, el enlace funciona como siempre
+  e.preventDefault();
+  _irAFamilia(fam);
+});
 (function(){try{if(_filtroIni.fam)_marcarFamilia(_filtroIni.fam);var qi=document.getElementById('q');if(qi)qi.value=_filtroIni.q;}catch(e){}})();
 pintar(); initMobile();
 
