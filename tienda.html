@@ -665,10 +665,35 @@ document.getElementById('q').addEventListener('input',pintar);
   });
 })();
 
+// === FAMILIAS: al elegir una familia (menu de familias o categorias del pie) se filtra en la
+// misma pagina, se cierra el panel de familias en el movil y la pantalla sube hasta los resultados ===
+function _subirAResultados(){
+  var c=document.getElementById('catalogo'); if(c) c.scrollTop=0;
+  var btn=document.getElementById('btn-fam');
+  var dest=(btn && btn.offsetParent!==null) ? btn : (document.querySelector('main.tienda')||c);
+  var y=dest.getBoundingClientRect().top+window.pageYOffset-6;
+  window.scrollTo({top:Math.max(0,y),behavior:'smooth'});
+}
+function _irAFamilia(fam){
+  var real=fam, n=norm(fam);
+  document.querySelectorAll('#fam-list a').forEach(function(a){var f=a.getAttribute('data-fam')||''; if(f && norm(f)===n) real=f;});
+  var qi=document.getElementById('q'); if(qi) qi.value='';
+  _marcarFamilia(real);
+  var side=document.getElementById('side-fam'); if(side) side.classList.remove('visible');
+  pintar(); initMobile();
+  _subirAResultados();
+}
 document.getElementById('fam-list').addEventListener('click',function(e){
   var a=e.target.closest('a'); if(!a)return; e.preventDefault();
-  this.querySelectorAll('a').forEach(function(x){x.classList.remove('activo');});
-  a.classList.add('activo'); pintar(); initMobile(); var c=document.getElementById('catalogo'); if(c)c.scrollTop=0;
+  _irAFamilia(a.getAttribute('data-fam')||'');
+});
+// Categorias del pie: igual que el menu de familias, sin recargar la pagina
+document.addEventListener('click',function(e){
+  var a=e.target.closest ? e.target.closest('.pie-cats a') : null; if(!a) return;
+  var fam=''; try{ fam=new URL(a.getAttribute('href'),location.href).searchParams.get('fam')||''; }catch(x){}
+  if(!fam) return;
+  e.preventDefault();
+  _irAFamilia(fam);
 });
 (function(){try{if(_filtroIni.fam)_marcarFamilia(_filtroIni.fam);var qi=document.getElementById('q');if(qi)qi.value=_filtroIni.q;}catch(e){}_filtrosListos=true;})();
 pintar(); initMobile();
