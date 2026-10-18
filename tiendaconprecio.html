@@ -584,17 +584,15 @@ function _tagPromo(p){
 }
 // Estado de las promociones segun lo que hay en el carrito (solo cuentan las cajas completas)
 function _estadoPromos(){
-  var cajas={};
+  var cajas={}, elegida={};
   Object.keys(_carrito||{}).forEach(function(k){
     var it=_carrito[k]; if((it.modo||'caja')!=='caja') return;
     var n=_codNum(it.p.codigo); if(n===null) return;
     cajas[n]=(cajas[n]||0)+it.qty;
+    if(it.promo) elegida[n]=Number(it.promo);
   });
-  var precio={}, regalos={}, avisos=[];
-  function aplicar(pr,n,cnt){
-    var act=precio[n];
-    if(!act || pr.min>act.promo.min) precio[n]={valor:pr.arts[n], promo:pr, cnt:cnt};
-  }
+  var precio={}, regalos={}, avisos=[], cands={};
+  function aplicar(pr,n,cnt){ (cands[n]=cands[n]||[]).push({pr:pr,cnt:cnt}); }
   PROMOS.forEach(function(pr){
     var arts=Object.keys(pr.arts).map(Number);
     if(pr.sumar){
@@ -603,6 +601,24 @@ function _estadoPromos(){
     }else{
       arts.forEach(function(n){ if((cajas[n]||0)>=pr.min) aplicar(pr,n,cajas[n]); });
     }
+  });
+  // Si varias promociones se cumplen para un articulo:
+  //  1) la de mas cajas minimas (escalones: con 10 cajas, la 10+1 antes que la 6+1)
+  //  2) a igualdad, la que el cliente eligio (la tarjeta de promocion desde la que la añadio)
+  //  3) si no eligio, la de precio final mas barato para el cliente
+  Object.keys(cands).forEach(function(n){
+    var c=cands[n], maxMin=Math.max.apply(null,c.map(function(x){return x.pr.min;}));
+    var emp=c.filter(function(x){return x.pr.min===maxMin;});
+    var sel=null;
+    if(elegida[n]) sel=emp.find(function(x){return x.pr.id===elegida[n];})||null;
+    if(!sel){
+      var prod=_prodPorNum(Number(n));
+      emp.forEach(function(x){
+        var f=_precioFinal(x.pr,prod); if(f==null) f=Infinity;
+        if(!sel || f<sel._f) { sel=x; sel._f=f; }
+      });
+    }
+    precio[n]={valor:sel.pr.arts[n], promo:sel.pr, cnt:sel.cnt};
   });
   // Regalos: solo de la promocion (escalon) que se aplica; acumulativos (por cada X cajas)
   var vistos={};
@@ -837,8 +853,9 @@ function _txtRegaloSel(pr,n){
   var r=Math.floor(n/pr.min)*pr.regaloCajas;
   return '+ '+_fmtNum(r)+' caja'+(r==1?'':'s')+' SIN CARGO';
 }
-function tarjetaPromo(pr,p){
+function tarjetaPromo(pr,p,multi){
   var id=pr.id+'-'+p.codigo, precio=pr.arts[_codNum(p.codigo)]; if(precio==null) precio=pr.precio;
+  var ini=multi?1:pr.min;
   var normal=getPrecio(p,'caja'), fin=_precioFinal(pr,p);
   return '<article class=\'card card-promo\'>'+_imgCard(p)+
     '<div class=\'card-body\'>'+
@@ -851,13 +868,13 @@ function tarjetaPromo(pr,p){
       '<div class=\'card-buyrow\'>'+
         '<div class=\'card-inqty\'>'+
           '<button class=\'cqty-btn\' onclick=\'_pqstep("'+pr.id+'","'+p.codigo+'",-1)\' aria-label=\'Quitar\'>&minus;</button>'+
-          '<span class=\'cqty-val\' id=\'pqv-'+id+'\'>'+_fmtNum(pr.min)+'</span>'+
+          '<span class=\'cqty-val\' id=\'pqv-'+id+'\' data-multi=\''+(multi?1:0)+'\'>'+_fmtNum(ini)+'</span>'+
           '<button class=\'cqty-btn\' onclick=\'_pqstep("'+pr.id+'","'+p.codigo+'",1)\' aria-label=\'Sumar\'>+</button>'+
         '</div>'+
         '<button class=\'card-addbtn\' data-pcod=\''+p.codigo+'\' id=\'padd-'+id+'\' onclick=\'_padd("'+pr.id+'","'+p.codigo+'")\'>Añadir</button>'+
       '</div>'+
       '<div class=\'card-buy-envase seleccionado\'>'+esc(p.envase||'')+'</div>'+
-      (pr.regaloCajas>0&&pr.regaloCod!==null?'<div class=\'promo-sel-regalo\' id=\'preg-'+id+'\'>'+esc(_txtRegaloSel(pr,pr.min))+'</div>':'')+
+      (!multi&&pr.regaloCajas>0&&pr.regaloCod!==null?'<div class=\'promo-sel-regalo\' id=\'preg-'+id+'\'>'+esc(_txtRegaloSel(pr,pr.min))+'</div>':'')+
     '</div>'+
     '</div></article>';
 }
@@ -879,18 +896,30 @@ function _promoPorId(id){ id=Number(id); return PROMOS.find(function(x){return x
 function _pqstep(pid,cod,d){
   var pr=_promoPorId(pid); if(!pr) return;
   var el=document.getElementById('pqv-'+pid+'-'+cod); if(!el) return;
-  var n=(parseFloat(String(el.textContent).replace(',','.'))||pr.min)+d*pr.min;
-  if(n<pr.min) n=pr.min; if(n>999) n=999;
+  var multi=el.getAttribute('data-multi')==='1', paso=multi?1:pr.min;
+  var n=(parseFloat(String(el.textContent).replace(',','.'))||paso)+d*paso;
+  if(n<paso) n=paso; if(n>999) n=999;
   el.textContent=_fmtNum(n);
   var rg=document.getElementById('preg-'+pid+'-'+cod); if(rg) rg.textContent=_txtRegaloSel(pr,n);
 }
 function _padd(pid,cod){
   var pr=_promoPorId(pid); var p=PRODUCTOS.find(function(x){return x.codigo===cod;}); if(!pr||!p) return;
   var el=document.getElementById('pqv-'+pid+'-'+cod);
-  var n=el?(parseFloat(String(el.textContent).replace(',','.'))||pr.min):pr.min;
+  var multi=el && el.getAttribute('data-multi')==='1';
+  var n=el?(parseFloat(String(el.textContent).replace(',','.'))||1):pr.min;
   var it=_carrito[cod];
-  if(it && it.qty>=n){ abrirCarrito(); return; }   // ya tiene esas cajas o mas: se ajusta en el carrito
-  if(it) it.qty=n; else _carrito[cod]={p:p,qty:n,modo:'caja'};
+  if(multi){
+    // varias variedades: cada pulsacion suma esas cajas de esta variedad
+    if(it) it.qty+=n; else _carrito[cod]={p:p,qty:n,modo:'caja'};
+    el.textContent='1';
+  }else{
+    if(it && it.qty>=n){ it.promo=pr.id; _csave(); _cardSync(cod); abrirCarrito(); return; }   // ya tiene esas cajas: se ajusta en el carrito
+    if(it){ if(it.qty<n) it.qty=n; } else _carrito[cod]={p:p,qty:n,modo:'caja'};
+  }
+  // La promocion elegida se apunta en todas las lineas de sus articulos (para que vayan juntas)
+  Object.keys(pr.arts).forEach(function(a){
+    Object.keys(_carrito).forEach(function(k){ var x=_carrito[k]; if((x.modo||'caja')==='caja' && _codNum(x.p.codigo)===Number(a)) x.promo=pr.id; });
+  });
   _modoSel[cod]='caja';
   _csave(); _cbadge(); _cardSync(cod);
   if(document.getElementById('cart-panel').classList.contains('abierto')) _renderCarrito();
@@ -955,8 +984,8 @@ function pintar(){
       if(unArticulo){
         cards=[tarjetaPromo(pr,prods[0])];
       }else{
-        // varias variedades (yogures, COVAP): tarjetas normales, el cliente elige las cajas de cada una
-        cards=prods.filter(function(p){return !pintados[p.codigo];}).map(function(p){pintados[p.codigo]=true;return tarjeta(p);});
+        // varias variedades (yogures, COVAP): una tarjeta por variedad, el cliente elige las cajas de cada una
+        cards=prods.map(function(p){return tarjetaPromo(pr,p,true);});
       }
       if(pr.regaloCajas>0 && pr.regaloCod!==null) cards.push(tarjetaRegalo(pr));
       hp.push('<div class=\'grid\'>'+cards.join('')+'</div>');
@@ -1187,8 +1216,8 @@ function _esEstimado(p){return p.upc===0 && p.peso>0;}
 var _carritoCargado=false;
 /* En modo admin cada cliente tiene su propio carrito, para no mezclar pedidos */
 function _cartKey(){ return _adminCli ? ('hm_cart_admin_'+_adminCli) : 'hm_cart'; }
-function _csave(){if(!_carritoCargado)return;try{var d={};Object.keys(_carrito).forEach(function(k){d[k]={qty:_carrito[k].qty,codigo:_carrito[k].p.codigo,modo:_carrito[k].modo||'caja'};});sessionStorage.setItem(_cartKey(),JSON.stringify(d));}catch(e){}}
-function _cload(){try{var raw=sessionStorage.getItem(_cartKey());if(!raw)return;var d=JSON.parse(raw);Object.keys(d).forEach(function(k){var info=d[k];var p=PRODUCTOS.find(function(x){return x.codigo===info.codigo;});if(p&&info.qty>0)_carrito[k]={p:p,qty:info.qty,modo:info.modo||'caja'};});}catch(e){}}
+function _csave(){if(!_carritoCargado)return;try{var d={};Object.keys(_carrito).forEach(function(k){d[k]={qty:_carrito[k].qty,codigo:_carrito[k].p.codigo,modo:_carrito[k].modo||'caja',promo:_carrito[k].promo||null};});sessionStorage.setItem(_cartKey(),JSON.stringify(d));}catch(e){}}
+function _cload(){try{var raw=sessionStorage.getItem(_cartKey());if(!raw)return;var d=JSON.parse(raw);Object.keys(d).forEach(function(k){var info=d[k];var p=PRODUCTOS.find(function(x){return x.codigo===info.codigo;});if(p&&info.qty>0)_carrito[k]={p:p,qty:info.qty,modo:info.modo||'caja',promo:info.promo||null};});}catch(e){}}
 
 /* Selector de la tarjeta: si el producto ya esta en el carrito, el numero es la cantidad
    TOTAL en el carrito y se edita en vivo; si no, es la cantidad que se va a añadir (minimo 1) */
