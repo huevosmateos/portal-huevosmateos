@@ -154,6 +154,14 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
   .tab{padding:7px 14px;font-size:13px}
   .promo-head h2{font-size:17px}
 }
+/* === TARJETAS DE PROMOCION Y DE REGALO === */
+.precio-antes{margin:0;color:var(--gris);font-size:13px;text-decoration:line-through}
+.precio-final{margin:2px 0 0;font-size:12.5px;font-weight:700;color:#1a7a4a}
+.promo-sel-regalo{margin-top:6px;font-size:12px;font-weight:700;color:#1a7a4a;background:#eafaf0;border:1px solid #b9e6c9;border-radius:6px;padding:4px 8px}
+.card.card-regalo{border:2px dashed #1a7a4a;background:#f6fdf8}
+.card-regalo .regalo-cinta{display:inline-block;margin:0 0 4px;background:#1a7a4a;color:#fff;font-size:11px;font-weight:700;letter-spacing:.05em;border-radius:5px;padding:2px 8px}
+.card-regalo .sin-cargo{margin:2px 0 4px;font-size:20px;font-weight:800;color:#1a7a4a;letter-spacing:.03em}
+.card-regalo .regalo-nota{margin:0;font-size:12px;color:var(--gris);line-height:1.35}
 /* === CERRAR SESION EN EL PIE (zona Informacion, a la derecha de los enlaces) === */
 .pie-info-fila{display:flex;align-items:center;justify-content:space-between;gap:20px}
 .pie-info-fila ul{margin:0;display:flex;flex-direction:column;gap:8px}
@@ -516,7 +524,7 @@ async function _cargarPromociones(){
     Object.keys(_promoPorArt).forEach(function(n){_promoPorArt[n].sort(function(a,b){return a.min-b.min;});});
   }catch(e){ console.warn('promociones',e); }
   var pn=document.getElementById('promo-n');
-  if(pn){ var g=_gruposPromo().length; pn.textContent=g; pn.style.display=g?'':'none'; }
+  if(pn){ var g=PROMOS.length; pn.textContent=g; pn.style.display=g?'':'none'; }
 }
 // Agrupa las promociones que afectan a los mismos articulos (ej. los dos escalones de la leche de hosteleria)
 function _gruposPromo(){
@@ -811,6 +819,88 @@ function tarjeta(p){
     '</div>'+
     '</div></article>';
 }
+// === TARJETAS DE LA PESTAÑA PROMOCIONES ===
+// Promocion de un solo articulo: la cantidad viene ya puesta con las cajas de la promocion
+// (10 en la 10+1) y sube/baja de promocion en promocion (10, 20, 30...), asi el cliente solo pulsa Añadir.
+// Los ids llevan el numero de promocion (pqv-<id>-<cod>) porque el mismo articulo puede salir en varias promos.
+function _imgCard(p){
+  var imgs=p.imgs||[];
+  var zoom=imgs.length?' data-codigo=\''+p.codigo+'\' style=\'cursor:zoom-in\'':'';
+  var main=imgs.length?'<img src=\''+imgs[0]+'\' alt=\''+esc(p.nombre)+'\' loading=\'lazy\' onerror=\'this.remove()\'>':'';
+  var badge=imgs.length>1?'<span class=\'multi\'>'+imgs.length+' fotos</span>':'';
+  return '<div class=\'card-img\''+zoom+'><span class=\'ph\'>'+esc(p.codigo)+'</span>'+main+badge+'</div>';
+}
+function _txtRegaloSel(pr,n){
+  if(!(pr.regaloCajas>0 && pr.regaloCod!==null)) return '';
+  var r=Math.floor(n/pr.min)*pr.regaloCajas;
+  return '+ '+_fmtNum(r)+' caja'+(r==1?'':'s')+' SIN CARGO';
+}
+function tarjetaPromo(pr,p){
+  var id=pr.id+'-'+p.codigo, precio=pr.arts[_codNum(p.codigo)]; if(precio==null) precio=pr.precio;
+  var normal=getPrecio(p,'caja'), fin=_precioFinal(pr,p);
+  return '<article class=\'card card-promo\'>'+_imgCard(p)+
+    '<div class=\'card-body\'>'+
+      (p.marca?'<p class=\'marca\'>'+esc(p.marca)+'</p>':'')+
+      '<h3><span class=\'card-cod\'>'+esc(p.codigo)+'</span> '+esc(p.nombre)+'</h3>'+
+      (normal && precio!=null && (parseFloat(String(normal).replace(',','.'))||0)>precio+0.0049?'<p class=\'precio-antes\'>'+esc(normal)+' &euro;</p>':'')+
+      (precio!=null?'<p class=\'precio\'>'+esc(_fmtEur(precio))+' <small>/ '+esc(p.unidad)+'</small></p>':'')+
+      (fin!=null && precio!=null && Math.abs(fin-precio)>0.0049?'<p class=\'precio-final\'>Precio final '+esc(_fmtEur(fin))+' / '+esc(p.unidad)+'</p>':'')+
+    '<div class=\'card-buy\'>'+
+      '<div class=\'card-buyrow\'>'+
+        '<div class=\'card-inqty\'>'+
+          '<button class=\'cqty-btn\' onclick=\'_pqstep("'+pr.id+'","'+p.codigo+'",-1)\' aria-label=\'Quitar\'>&minus;</button>'+
+          '<span class=\'cqty-val\' id=\'pqv-'+id+'\'>'+_fmtNum(pr.min)+'</span>'+
+          '<button class=\'cqty-btn\' onclick=\'_pqstep("'+pr.id+'","'+p.codigo+'",1)\' aria-label=\'Sumar\'>+</button>'+
+        '</div>'+
+        '<button class=\'card-addbtn\' data-pcod=\''+p.codigo+'\' id=\'padd-'+id+'\' onclick=\'_padd("'+pr.id+'","'+p.codigo+'")\'>Añadir</button>'+
+      '</div>'+
+      '<div class=\'card-buy-envase seleccionado\'>'+esc(p.envase||'')+'</div>'+
+      (pr.regaloCajas>0&&pr.regaloCod!==null?'<div class=\'promo-sel-regalo\' id=\'preg-'+id+'\'>'+esc(_txtRegaloSel(pr,pr.min))+'</div>':'')+
+    '</div>'+
+    '</div></article>';
+}
+// Tarjeta del producto que se entrega sin cargo: precio de tarifa tachado y "SIN CARGO"
+function tarjetaRegalo(pr){
+  var g=_prodPorNum(pr.regaloCod); if(!g) return '';
+  var tar=getPrecioTarifa(g);
+  return '<article class=\'card card-regalo\'>'+_imgCard(g)+
+    '<div class=\'card-body\'>'+
+      '<p class=\'regalo-cinta\'>&#127873; REGALO</p>'+
+      (g.marca?'<p class=\'marca\'>'+esc(g.marca)+'</p>':'')+
+      '<h3><span class=\'card-cod\'>'+esc(g.codigo)+'</span> '+esc(g.nombre)+'</h3>'+
+      (tar?'<p class=\'precio-antes\'>'+esc(tar)+' &euro; / '+esc(g.unidad)+'</p>':'')+
+      '<p class=\'sin-cargo\'>SIN CARGO</p>'+
+      '<p class=\'regalo-nota\'>'+_fmtNum(pr.regaloCajas)+' caja'+(pr.regaloCajas==1?'':'s')+(g.envase?' ('+esc(g.envase)+')':'')+' por cada '+_fmtNum(pr.min)+' cajas. Se a\u00f1ade sola al carrito.</p>'+
+    '</div></article>';
+}
+function _promoPorId(id){ id=Number(id); return PROMOS.find(function(x){return x.id===id;})||null; }
+function _pqstep(pid,cod,d){
+  var pr=_promoPorId(pid); if(!pr) return;
+  var el=document.getElementById('pqv-'+pid+'-'+cod); if(!el) return;
+  var n=(parseFloat(String(el.textContent).replace(',','.'))||pr.min)+d*pr.min;
+  if(n<pr.min) n=pr.min; if(n>999) n=999;
+  el.textContent=_fmtNum(n);
+  var rg=document.getElementById('preg-'+pid+'-'+cod); if(rg) rg.textContent=_txtRegaloSel(pr,n);
+}
+function _padd(pid,cod){
+  var pr=_promoPorId(pid); var p=PRODUCTOS.find(function(x){return x.codigo===cod;}); if(!pr||!p) return;
+  var el=document.getElementById('pqv-'+pid+'-'+cod);
+  var n=el?(parseFloat(String(el.textContent).replace(',','.'))||pr.min):pr.min;
+  var it=_carrito[cod];
+  if(it && it.qty>=n){ abrirCarrito(); return; }   // ya tiene esas cajas o mas: se ajusta en el carrito
+  if(it) it.qty=n; else _carrito[cod]={p:p,qty:n,modo:'caja'};
+  _modoSel[cod]='caja';
+  _csave(); _cbadge(); _cardSync(cod);
+  if(document.getElementById('cart-panel').classList.contains('abierto')) _renderCarrito();
+}
+// Pone en verde los botones de las tarjetas de promocion cuyo articulo ya esta en el carrito
+function _promoSync(cod){
+  document.querySelectorAll(cod?('[data-pcod="'+cod+'"]'):'[data-pcod]').forEach(function(b){
+    var it=_carrito[b.getAttribute('data-pcod')];
+    if(it){ b.classList.add('added'); b.innerHTML='&#10003; '+_fmtNum(it.qty)+' en carrito'; }
+    else { b.classList.remove('added'); b.innerHTML='Añadir'; }
+  });
+}
 function pintar(){
   _guardarFiltrosURL();
   var q=(document.getElementById('q').value||'').toLowerCase().trim();
@@ -843,24 +933,34 @@ function pintar(){
     cont.scrollTop=0; return;
   }
 
-  // 3) Pestaña PROMOCIONES
+  // 3) Pestaña PROMOCIONES: cada promocion por separado (la 10+1 y la 6+1 son dos bloques)
   if(_promoActivo){
-    var grupos=_gruposPromo();
-    if(!grupos.length){cont.innerHTML='<p class=\'vacio\'>Ahora mismo no hay promociones en vigor.</p>';cont.scrollTop=0;return;}
+    var lp=PROMOS.slice().sort(function(a,b){return a.id-b.id;});
+    if(!lp.length){cont.innerHTML='<p class=\'vacio\'>Ahora mismo no hay promociones en vigor.</p>';cont.scrollTop=0;return;}
     var hp=[], pintados={};
-    grupos.forEach(function(g){
-      var prods=g.clave.split(',').map(Number).map(_prodPorNum).filter(function(p){return p && !pintados[p.codigo];});
+    lp.forEach(function(pr){
+      var prods=Object.keys(pr.arts).map(Number).sort(function(a,b){return a-b;}).map(_prodPorNum).filter(Boolean);
       if(!prods.length) return;
-      var pr0=g.promos[0], unidad=prods[0].unidad||'';
-      var sumar=pr0.sumar && Object.keys(pr0.arts).length>1;
-      var hasta=g.promos.map(function(x){return x.hasta;}).filter(Boolean).sort()[0]||'';
-      hp.push('<div class=\'promo-head\'><h2>&#127991; '+esc(pr0.nombre)+'</h2><ul>'+
-        g.promos.map(function(x){return '<li>'+esc(_textoCondicion(x,prods[0],true))+'</li>';}).join('')+
+      var unArticulo=(prods.length===1);
+      var sumar=pr.sumar && prods.length>1;
+      var tit=pr.nombre+(pr.regaloCajas>0&&pr.regaloCod!==null&&unArticulo&&pr.regaloCod===_codNum(prods[0].codigo)?(' \u00b7 '+_fmtNum(pr.min)+' + '+_fmtNum(pr.regaloCajas)):'');
+      hp.push('<div class=\'promo-head\'><h2>&#127991; '+esc(tit)+'</h2><ul>'+
+        '<li>'+esc(_textoCondicion(pr,prods[0],true))+'</li>'+
         (sumar?'<li>Se suman las cajas de todas las variedades de esta promoci\u00f3n.</li>':'')+
-        '</ul>'+(hasta?'<p class=\'promo-vig\'>V\u00e1lida hasta el '+_fmtFecha(hasta)+'</p>':'')+'</div>');
-      hp.push('<div class=\'grid\'>'+prods.map(function(p){pintados[p.codigo]=true;return tarjeta(p);}).join('')+'</div>');
+        (unArticulo?'<li>Ya tienes puestas las '+_fmtNum(pr.min)+' cajas: solo pulsa <b>A\u00f1adir</b>.</li>':'')+
+        '</ul>'+(pr.hasta?'<p class=\'promo-vig\'>V\u00e1lida hasta el '+_fmtFecha(pr.hasta)+'</p>':'')+'</div>');
+      var cards;
+      if(unArticulo){
+        cards=[tarjetaPromo(pr,prods[0])];
+      }else{
+        // varias variedades (yogures, COVAP): tarjetas normales, el cliente elige las cajas de cada una
+        cards=prods.filter(function(p){return !pintados[p.codigo];}).map(function(p){pintados[p.codigo]=true;return tarjeta(p);});
+      }
+      if(pr.regaloCajas>0 && pr.regaloCod!==null) cards.push(tarjetaRegalo(pr));
+      hp.push('<div class=\'grid\'>'+cards.join('')+'</div>');
     });
     cont.innerHTML=hp.length?hp.join(''):'<p class=\'vacio\'>Los art\u00edculos de las promociones no est\u00e1n en el cat\u00e1logo web.</p>';
+    _promoSync();
     cont.scrollTop=0; return;
   }
 
@@ -1137,6 +1237,7 @@ function _cardSync(cod){
   var frac=document.getElementById('frac-'+cod);
   if(env)env.classList.toggle('en-carrito',!!_carrito[cod]);
   if(frac)frac.classList.toggle('en-carrito',!!_carrito[cod+'#F']);
+  if(typeof _promoSync==='function') _promoSync(cod);
 }
 /* Cambia el modo de compra (caja/fraccion) seleccionado en una tarjeta */
 function _setModo(cod,modo){
@@ -1155,6 +1256,7 @@ function _setModo(cod,modo){
 }
 function _cardSyncAll(){
   document.querySelectorAll('[id^="addbtn-"]').forEach(function(b){_cardSync(b.id.slice(7));});
+  if(typeof _promoSync==='function') _promoSync();
 }
 function _cadd(cod){
   var p=PRODUCTOS.find(function(x){return x.codigo===cod;});if(!p)return;
