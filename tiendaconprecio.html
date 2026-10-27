@@ -320,6 +320,29 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 .hab-lista .pre-manual a{color:#8a5a00;text-decoration:underline;cursor:pointer}
 .hab-lista th.c-hist,.hab-lista td.c-hist{border-left:1px solid var(--linea)}
 .hab-lista th.c-hist{background:#2a2a8f}
+.hab-lista .cod-movil{display:none;color:var(--azul)}
+/* Movil: en la primera pantalla caben articulo, precio y el formulario de añadir;
+   deslizando a la derecha se ve el historico */
+@media(max-width:600px){
+  .hab-lista{font-size:12.5px}
+  .hab-lista th,.hab-lista td{padding:6px 5px}
+  .hab-lista th{font-size:11px;letter-spacing:0}
+  .hab-lista .c-cod{display:none}
+  .hab-lista .cod-movil{display:inline}
+  .hab-lista .c-art{min-width:112px;max-width:128px}
+  .hab-lista .c-art b{font-size:12.5px;line-height:1.25}
+  .hab-lista .c-art small{display:block;font-size:11px;line-height:1.25;margin-top:2px}
+  .hab-lista .c-pre{white-space:normal}
+  .hab-lista .pre-edit{flex-wrap:wrap;gap:2px}
+  .hab-lista .pre-edit input{width:62px;font-size:14px;padding:4px 5px}
+  .hab-lista .pre-ud{width:100%;font-size:10.5px;line-height:1.2}
+  .hab-lista .pre-manual{font-size:10.5px}
+  .hab-lista .c-buy .card-buyrow{gap:4px}
+  .hab-lista .card-inqty .cqty-btn{width:22px;height:30px;font-size:14px}
+  .hab-lista .card-inqty .cqty-val{min-width:18px;font-size:13px}
+  .hab-lista .card-addbtn{padding:0 8px;font-size:12px;min-height:32px}
+  .hab-lista td.c-hist,.hab-lista th.c-hist{padding-left:12px;padding-right:10px}
+}
 .hab-lista .c-cod{font-weight:700;color:var(--azul);white-space:nowrap}
 .hab-lista .c-art b{display:block;font-weight:700;line-height:1.3}
 .hab-lista .c-art small{color:var(--gris);font-size:12px}
@@ -852,7 +875,7 @@ function filaHabitual(p){
   var promos=_promosDe(p.codigo);
   return '<tr>'+
     '<td class=\'c-cod\'>'+esc(p.codigo)+'</td>'+
-    '<td class=\'c-art\'><b>'+esc(p.nombre)+'</b>'+(p.envase?'<small>'+esc(p.envase)+'</small>':'')+
+    '<td class=\'c-art\'><b><span class=\'cod-movil\'>'+esc(p.codigo)+' </span>'+esc(p.nombre)+'</b>'+(p.envase?'<small>'+esc(p.envase)+'</small>':'')+
       (promos.length?'<span class=\'promo-mini\'>&#127991; PROMO '+esc(promos.map(function(x){return _textoCondicion(x,p,false);}).join(' \u00b7 '))+'</span>':'')+'</td>'+
     '<td class=\'c-pre\'>'+
       '<div class=\'pre-edit\'><input type=\'text\' inputmode=\'decimal\' id=\'pa-'+p.codigo+'\' class=\''+(manual!=null?'cambiado':'')+'\' value=\''+_fmt2(manual!=null?manual:normal)+'\' onchange=\'_cambiarPrecioAdmin("'+p.codigo+'",this)\' onfocus=\'this.select()\'>'+
@@ -1112,7 +1135,7 @@ function pintar(){
       lh.sort(function(a,b){return String(a.codigo).localeCompare(String(b.codigo));});
       cont.innerHTML='<h2 class=\'fam-tit\'>Productos habituales <small>('+lh.length+')</small></h2>'+
         '<div class=\'hab-lista-wrap\'><table class=\'hab-lista\'><thead><tr>'+
-        '<th>C\u00f3digo</th><th>Art\u00edculo</th><th>Precio</th><th>Cantidad</th>'+
+        '<th class=\'c-cod\'>C\u00f3digo</th><th>Art\u00edculo</th><th>Precio</th><th>Cantidad</th>'+
         '<th class=\'c-hist\'>Fecha \u00falt. alb.</th><th class=\'c-hist\' style=\'text-align:right\'>Unid. \u00falt.</th><th class=\'c-hist\' style=\'text-align:right\'>\u00dalt. precio</th>'+
         '</tr></thead><tbody>'+lh.map(filaHabitual).join('')+'</tbody></table></div>';
       cont.scrollTop=0; return;
