@@ -394,6 +394,11 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 .menu-cli button.salir{color:#c0392b}
 .menu-aviso{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:var(--azul);color:#fff;padding:14px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);text-align:center;max-width:90%}
 @media(max-width:600px){.menu-btn{width:44px;height:40px}.menu-cli{width:240px}}
+.aviso-repetir{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:min(440px,calc(100% - 32px));background:#fff;color:var(--txt);border:2px solid var(--azul);border-radius:12px;box-shadow:0 10px 34px rgba(13,1,144,.25);padding:14px 16px;font-size:14px;line-height:1.45;z-index:10000;max-height:70vh;overflow:auto}
+.aviso-repetir b{color:var(--azul)}
+.aviso-repetir .rep-sec{margin-top:10px;font-weight:700;color:#7a5200}
+.aviso-repetir ul{margin:4px 0 0;padding-left:18px;font-size:13px}
+.aviso-repetir button{display:block;margin:12px 0 0 auto;background:var(--azul);color:#fff;border:0;border-radius:8px;padding:8px 18px;font-family:inherit;font-weight:700;cursor:pointer}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -802,6 +807,8 @@ sb.auth.getSession().then(async function(r){
   pintar(); initMobile();
   // Recuperar el carrito guardado (al recargar la pagina no se pierde)
   _cload(); _carritoCargado=true; _csave(); _cbadge(); _cardSyncAll();
+  // Pedido repetido desde "Mis ultimos pedidos": se añade al carrito con los precios de hoy
+  _importarPedidoRepetido();
   // Refrescar catalogo y precios cada 3 minutos sin necesidad de recargar la pagina
   setInterval(function(){ _cargarCatalogo(true); }, 180000);
 });
@@ -1963,5 +1970,70 @@ document.addEventListener('click',function(e){
   if(w && !w.contains(e.target)) _cerrarMenuCliente();
 });
 document.addEventListener('keydown',function(e){ if(e.key==='Escape') _cerrarMenuCliente(); });
+</script>
+<script>
+/* ===== REPETIR PEDIDO (viene de mispedidos.html) =====
+   Las lineas llegan con codigo, cajas y unidades del albaran. Solo se guardan codigo y cantidad
+   en el carrito: el precio lo calcula la tienda como siempre (tarifa, precio especial, promociones de hoy). */
+function _importarPedidoRepetido(){
+  var raw=null;
+  try{ raw=sessionStorage.getItem('hm_repetir'); sessionStorage.removeItem('hm_repetir'); }catch(e){}
+  if(!raw) return;
+  var dat; try{ dat=JSON.parse(raw); }catch(e){ return; }
+  if(!dat || !dat.lineas || !dat.lineas.length) return;
+
+  // Juntar lineas del mismo articulo
+  var grupos={}, orden=[];
+  dat.lineas.forEach(function(l){
+    var n=_codNum(l.c); var k=(n==null)?String(l.c):String(n);
+    if(!grupos[k]){ grupos[k]={c:l.c, n:n, cajas:0, uds:0, d:l.d}; orden.push(k); }
+    grupos[k].cajas+=Number(l.cajas)||0; grupos[k].uds+=Number(l.uds)||0;
+  });
+
+  var anadidos=0, noDisp=[], redondeados=[];
+  orden.forEach(function(k){
+    var g=grupos[k];
+    var p=PRODUCTOS.find(function(x){ return g.n!=null ? _codNum(x.codigo)===g.n : x.codigo===g.c; });
+    if(!p){ noDisp.push(g.c+' '+g.d); return; }
+    var cajas=g.cajas;
+    if(!(cajas>0) && p.upc>0 && g.uds>0) cajas=g.uds/p.upc;      // vendido suelto: pasar unidades a cajas
+    if(!(cajas>0)){ noDisp.push(g.c+' '+g.d+' (sin cantidad)'); return; }
+    var enteras=Math.floor(cajas+1e-6), resto=cajas-enteras;
+    var fq=0;
+    if(resto>0.001){
+      if(p.fr_uds>1){
+        fq=Math.round(resto*p.fr_uds);
+        var minimo=p.fr_min||1;
+        if(fq<minimo){ fq=minimo; redondeados.push(p.codigo+' '+p.nombre); }
+        if(fq>=p.fr_uds){ enteras++; fq=0; }
+      } else {
+        enteras++; redondeados.push(p.codigo+' '+p.nombre);   // no admite fraccion: caja completa
+      }
+    }
+    if(enteras>0){
+      if(_carrito[p.codigo]) _carrito[p.codigo].qty+=enteras;
+      else _carrito[p.codigo]={p:p, qty:enteras, modo:'caja'};
+    }
+    if(fq>0){
+      var kf=p.codigo+'#F';
+      if(_carrito[kf]) _carrito[kf].qty+=fq;
+      else _carrito[kf]={p:p, qty:fq, modo:'fraccion'};
+    }
+    anadidos++;
+  });
+  _csave(); _cbadge(); _cardSyncAll();
+  if(anadidos) abrirCarrito();
+  _avisoRepetir(dat, anadidos, noDisp, redondeados);
+}
+function _avisoRepetir(dat, anadidos, noDisp, redondeados){
+  var h='<b>Pedido '+esc(dat.alb)+' del '+esc(dat.fecha)+'</b><br>'+
+        (anadidos? anadidos+' art\u00edculo'+(anadidos==1?'':'s')+' a\u00f1adido'+(anadidos==1?'':'s')+' al carrito con los <b>precios de hoy</b>.' : 'No se ha podido a\u00f1adir ning\u00fan art\u00edculo.');
+  if(noDisp.length) h+='<div class="rep-sec">No disponibles ahora en la tienda:</div><ul>'+noDisp.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul>';
+  if(redondeados.length) h+='<div class="rep-sec">Ajustados a la cantidad m\u00ednima de venta:</div><ul>'+redondeados.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul>';
+  h+='<button type="button" onclick="this.parentNode.remove()">Entendido</button>';
+  var d=document.createElement('div'); d.className='aviso-repetir'; d.innerHTML=h;
+  document.body.appendChild(d);
+  if(!noDisp.length && !redondeados.length) setTimeout(function(){ if(d.parentNode) d.remove(); }, 6000);
+}
 </script>
 </body></html>
