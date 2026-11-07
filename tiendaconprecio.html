@@ -130,7 +130,7 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 /* === PESTAÑAS (habituales / promociones) Y BUSCADOR DEBAJO === */
 .vistas{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:8px;margin:2px 0 12px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.tab{display:inline-flex;align-items:center;gap:7px;background:#fff;color:var(--azul);border:2px solid var(--azul);padding:7px 22px;border-radius:999px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
+.tab{display:inline-flex;align-items:center;gap:7px;background:#fff;color:var(--azul);border:2px solid var(--azul);padding:7px 22px;border-radius:9px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
 .tab:hover{background:#f1f0ff}
 .tab.activo{background:var(--azul);color:#fff}
 .tab-n{background:var(--yema);color:#1d1d27;border-radius:999px;font-size:11px;font-weight:700;padding:1px 8px;line-height:1.5}
@@ -381,7 +381,7 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 /* === MENU DEL CLIENTE (tres rayas, encima del carrito) === */
 .top-acciones{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 .menu-wrap{position:relative}
-.menu-btn{display:inline-flex;align-items:center;justify-content:center;width:46px;height:42px;background:var(--azul);color:#fff;border:0;border-radius:9px;cursor:pointer}
+.menu-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:92px;height:42px;font-family:inherit;font-weight:700;font-size:15px;background:var(--azul);color:#fff;border:0;border-radius:9px;cursor:pointer}
 .menu-btn:hover,.menu-btn[aria-expanded="true"]{background:var(--azul2)}
 .menu-cli{display:none;position:absolute;top:calc(100% + 8px);right:0;width:260px;background:#fff;border:1px solid var(--linea);border-radius:12px;box-shadow:0 10px 34px rgba(13,1,144,.18);padding:6px;z-index:700}
 .menu-cli.abierto{display:block}
@@ -393,22 +393,28 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 .menu-cli hr{border:0;border-top:1px solid var(--linea);margin:4px 0}
 .menu-cli button.salir{color:#c0392b}
 .menu-aviso{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:var(--azul);color:#fff;padding:14px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);text-align:center;max-width:90%}
-@media(max-width:600px){.menu-btn{width:44px;height:40px}.menu-cli{width:240px}}
+@media(max-width:600px){.menu-btn{width:88px;height:40px}.menu-cli{width:240px}}
+/* Cerrar sesion solo desde el boton Menu (se quita el boton junto al correo, tambien en escritorio) */
+#nav-login-widget .nav-logged button{display:none}
 /* Movil: menu y carrito arriba a la derecha, a la altura del logo y los telefonos */
 @media(max-width:600px){
   .top-inner{position:relative}
-  .top-left{padding-right:96px}
-  .top-acciones{position:absolute;top:10px;right:14px;gap:6px}
-  .top-acciones .menu-btn{width:44px;height:38px}
-  .top-acciones .cart-header-btn{padding:8px 12px;gap:7px}
+  .top-left{padding-right:100px}
+  /* el menu queda arriba a la derecha; el carrito baja a la linea del correo del cliente */
+  .top-acciones{position:static;margin-left:auto;flex-direction:row;align-items:center}
+  .top-acciones .menu-wrap{position:absolute;top:10px;right:14px}
+  .top-right{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+  .top-acciones .menu-btn{width:88px;height:38px;font-size:14px;gap:7px}
+  .top-acciones .menu-btn svg{flex-shrink:0}
+  .top-acciones .cart-header-btn{padding:12px 12px;gap:7px;margin-top:-16px}  /* subido ~2 mm: su borde de abajo queda a ras del saludo */
   .top-right{width:100%}
-  #nav-login-widget{max-width:calc(100% - 96px);min-width:0}
+  #nav-login-widget{max-width:calc(100% - 92px);min-width:0;flex:0 1 auto}
   #nav-login-widget .nav-logged{max-width:100%;min-width:0;overflow:hidden}
   #nav-login-widget .nav-logged span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 }
 /* Movil: todo mas compacto hacia arriba (usuario, pestañas y buscador) */
 @media(max-width:600px){
-  .top-inner{padding:8px 12px 8px;row-gap:6px}
+  .top-inner{padding:8px 12px 4px;row-gap:6px}  /* linea de separacion ~1 mm mas arriba */
   .top-info .tel-num{white-space:nowrap}
   .vistas{margin:6px 0 8px;gap:6px}
   .tabs{flex-wrap:nowrap;gap:6px}
@@ -417,10 +423,11 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 }
 @media(max-width:380px){
   .logo-img{height:auto;width:118px}
-  .top-left{gap:8px;padding-right:90px}
+  .top-left{gap:8px;padding-right:96px}
   .top-info .tel-label{font-size:11px}
   .top-info .tel-num{font-size:13px}
   .tab{padding:6px 9px;font-size:12px;gap:5px}
+  .top-acciones .cart-header-btn{margin-top:-10px}  /* que no toque el boton Menu */
 }
 /* Boton Anadir / Anadido de las tarjetas: que el texto no se salga */
 @media(max-width:600px){
@@ -450,7 +457,7 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
     <div id="nav-login-widget"></div>
     <div class="top-acciones">
       <div class="menu-wrap">
-        <button class="menu-btn" id="menu-btn" type="button" onclick="toggleMenuCliente(event)" aria-label="Menú" aria-haspopup="true" aria-expanded="false" title="Menú"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <button class="menu-btn" id="menu-btn" type="button" onclick="toggleMenuCliente(event)" aria-label="Menú" aria-haspopup="true" aria-expanded="false" title="Menú"><span class="menu-txt">Men&uacute;</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
         <div class="menu-cli" id="menu-cli" role="menu">
           <div class="menu-cli-cab" id="menu-cli-cab">Mi cuenta</div>
           <button type="button" role="menuitem" onclick="_menuCliente('pedidos')"><span class="mi">&#128230;</span>Mis &uacute;ltimos pedidos</button>
