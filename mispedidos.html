@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mis últimos pedidos - Huevos Mateos Tienda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#0d0190;--azul2:#1b16c9;--yema:#f5b301;--txt:#1d1d27;--gris:#6b6b78;--linea:#e7e7ef;--bg:#fafafb;--campo:#eef0ff}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Manrope',system-ui,sans-serif;color:var(--txt);background:#f4f4f8;line-height:1.5}
+a{color:inherit;text-decoration:none}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;line-height:1.15;margin:0}
+.top{background:#fff;border-bottom:1px solid var(--linea)}
+.top-inner{max-width:1000px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.top-left{display:flex;align-items:center;gap:18px}
+.logo-img{height:90px;width:auto}
+.top-info{display:flex;flex-direction:column;line-height:1.35}
+.top-info .tel-label{color:var(--gris);font-size:14px}
+.top-info .tel-num{color:var(--azul);font-weight:700;font-size:16px}
+.btn-volver{display:inline-flex;align-items:center;gap:8px;background:var(--azul);color:#fff;border:0;border-radius:9px;padding:11px 18px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap}
+.btn-volver:hover{background:var(--azul2)}
+main{max-width:1000px;margin:0 auto;padding:22px 20px 60px}
+.cab-pag{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.cab-pag h1{font-size:30px;color:var(--azul)}
+.cab-pag .cli{color:var(--gris);font-size:14px}
+.cab-pag .cli b{color:var(--txt)}
+.nota{color:var(--gris);font-size:13px;margin:0 0 18px}
+.admin-banner{background:var(--yema);color:#1d1d27;font-size:14px;font-weight:700;padding:8px 16px;text-align:center}
+
+/* Tarjeta de albaran (inspirada en la ficha del ERP) */
+.alb{background:#fff;border:1px solid var(--linea);border-radius:12px;margin:0 0 18px;overflow:hidden;box-shadow:0 2px 10px rgba(13,1,144,.05)}
+.alb-cab{display:grid;grid-template-columns:repeat(4,auto) 1fr;gap:10px 18px;align-items:end;padding:14px 16px;background:var(--bg);border-bottom:1px solid var(--linea)}
+.dato{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dato label{font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.dato span{display:block;background:var(--campo);border:1px solid #dcdcfb;border-radius:6px;padding:4px 10px;font-weight:700;color:var(--azul);font-size:15px;white-space:nowrap}
+.dato.fecha span{background:var(--azul);color:#fff;border-color:var(--azul)}
+.dato.total{justify-self:end;text-align:right}
+.dato.total span{background:#fff;color:var(--txt)}
+.estado{display:inline-block;margin-left:6px;font-size:11px;font-weight:700;color:#7a5200;background:#fff4d1;border:1px solid #f5d77a;border-radius:20px;padding:2px 9px;vertical-align:middle}
+.alb-tit{background:var(--azul);color:#fff;font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:6px 16px}
+table.lin{width:100%;border-collapse:collapse;font-size:14px}
+table.lin th{text-align:left;font-size:12px;color:var(--gris);font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:7px 12px;border-bottom:1px solid var(--linea);background:#fff}
+table.lin td{padding:7px 12px;border-bottom:1px solid var(--linea);vertical-align:top}
+table.lin tr:last-child td{border-bottom:0}
+table.lin tbody tr:nth-child(even) td{background:#fafafb}
+table.lin .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.lin .cod{font-weight:700;color:var(--azul);white-space:nowrap}
+table.lin .desc{font-weight:600}
+.vacio{background:#fff;border:1px dashed var(--linea);border-radius:12px;padding:30px;text-align:center;color:var(--gris)}
+.mas{display:block;margin:6px auto 0;background:#fff;color:var(--azul);border:2px solid var(--azul);border-radius:999px;padding:10px 26px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.mas:hover{background:#f1f0ff}
+.cargando{color:var(--gris);padding:30px;text-align:center}
+
+/* Movil: la cabecera en dos filas y cada linea en dos renglones (codigo + descripcion / cajas, unidades, precio) */
+@media(max-width:640px){
+  .top-inner{padding:10px 14px}
+  .logo-img{height:56px}
+  .top-info .tel-label{font-size:12px}
+  .top-info .tel-num{font-size:14px}
+  .btn-volver{padding:9px 12px;font-size:13px}
+  .btn-volver .txt-largo{display:none}
+  main{padding:16px 10px 50px}
+  .cab-pag h1{font-size:24px}
+  .alb-cab{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px}
+  .dato span{font-size:14px;padding:4px 8px;overflow:hidden;text-overflow:ellipsis}
+  .dato.fecha{grid-column:span 2}
+  .dato.total{grid-column:span 1;justify-self:stretch;text-align:left}
+  table.lin thead{display:none}
+  table.lin,table.lin tbody{display:block;width:100%}
+  table.lin tr{display:grid;grid-template-columns:auto 1fr;column-gap:8px;padding:8px 12px;border-bottom:1px solid var(--linea)}
+  table.lin tbody tr:nth-child(even){background:#fafafb}
+  table.lin td{display:block;padding:0;border:0!important;background:transparent!important}
+  table.lin .cod{grid-column:1;grid-row:1}
+  table.lin .desc{grid-column:2;grid-row:1}
+  table.lin .cifras{grid-column:1 / span 2;grid-row:2;margin-top:3px;font-size:13px;color:var(--gris)}
+  table.lin .cifras b{color:var(--txt)}
+  table.lin td.n{display:none}
+}
+@media(min-width:641px){ table.lin .cifras{display:none} }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header class="top"><div class="top-inner">
+  <div class="top-left">
+    <a href="tiendaconprecio.html" class="logo"><img src="assets/logo.bmp" alt="Huevos Mateos" class="logo-img"></a>
+    <div class="top-info">
+      <span class="tel-label">Llamanos:</span>
+      <span class="tel-num">927 415 311</span>
+      <span class="tel-num">639 75 55 93</span>
+    </div>
+  </div>
+  <a href="tiendaconprecio.html" class="btn-volver"><span>&#8592;</span><span><span class="txt-largo">Volver a la </span>tienda</span></a>
+</div></header>
+
+<main>
+  <div class="cab-pag">
+    <h1>Mis &uacute;ltimos pedidos</h1>
+    <div class="cli" id="cli"></div>
+  </div>
+  <p class="nota">Albaranes de los &uacute;ltimos meses. Los pedidos hechos hoy en la web aparecer&aacute;n cuando se pasen al albar&aacute;n.</p>
+  <div id="lista"><p class="cargando">Cargando pedidos&hellip;</p></div>
+  <button class="mas" id="btn-mas" style="display:none" onclick="cargar()">Ver m&aacute;s pedidos</button>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://pkwttturncewwdlpxrxz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3R0dHVybmNld3dkbHB4cnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTQ1OTEsImV4cCI6MjA5NTczMDU5MX0.aFKZbuO-0zO--SckT-FnjkGdOAV5nBWeEoLgMcV80VY';
+var POR_PAGINA = 15;
+
+// Modo administrador (igual que en tiendaconprecio.html)
+var _adminCli = null;
+try{ _adminCli = sessionStorage.getItem('hm_admin_cliente') || null; }catch(e){}
+const sb = _adminCli
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: 'hm-admin-auth', persistSession: true, autoRefreshToken: true } })
+  : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+var _cod = '', _nombre = '', _nomCom = '', _pagina = 0;
+
+function esc(s){var d=document.createElement('div');d.textContent=(s==null?'':String(s));return d.innerHTML;}
+function nf(v,dec){ if(v==null||v==='') return ''; return Number(v).toLocaleString('es-ES',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+function fFecha(iso){ if(!iso) return ''; var p=String(iso).slice(0,10).split('-'); return p[2]+'-'+p[1]+'-'+p[0]; }
+function hoyIso(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+
+function tarjeta(a){
+  var lins=(a.albaranes_lin||[]).slice().sort(function(x,y){return (x.orden||0)-(y.orden||0);});
+  var pendiente = a.fecha && String(a.fecha).slice(0,10) > hoyIso();
+  var filas = lins.map(function(l){
+    return '<tr>'+
+      '<td class="cod">'+esc(l.codigo_articulo)+'</td>'+
+      '<td class="n">'+nf(l.cajas,2)+'</td>'+
+      '<td class="n">'+nf(l.unidades,2)+'</td>'+
+      '<td class="n">'+nf(l.precio,3)+'</td>'+
+      '<td class="desc">'+esc(l.descripcion)+'</td>'+
+      '<td class="cifras">Cajas <b>'+nf(l.cajas,2)+'</b> &middot; Unid. <b>'+nf(l.unidades,2)+'</b> &middot; Precio <b>'+nf(l.precio,3)+' &euro;</b></td>'+
+    '</tr>';
+  }).join('');
+  return '<article class="alb">'+
+    '<div class="alb-cab">'+
+      '<div class="dato"><label>Ejercicio</label><span>'+esc(a.ejercicio)+'</span></div>'+
+      '<div class="dato"><label>Serie</label><span>'+esc(a.serie)+'</span></div>'+
+      '<div class="dato"><label>N&ordm; albar&aacute;n</label><span>'+esc(a.numero)+'</span></div>'+
+      '<div class="dato fecha"><label>Fecha'+(pendiente?' <span class="estado">Pendiente de servir</span>':'')+'</label><span>'+fFecha(a.fecha)+'</span></div>'+
+      (a.total!=null?'<div class="dato total"><label>Importe</label><span>'+nf(a.total,2)+' &euro;</span></div>':'<div></div>')+
+    '</div>'+
+    '<div class="alb-tit">L&iacute;neas del albar&aacute;n</div>'+
+    (lins.length
+      ? '<table class="lin"><thead><tr><th>C&oacute;digo</th><th class="n">Cajas</th><th class="n">Unidades</th><th class="n">Precio</th><th>Descripci&oacute;n art&iacute;culo</th></tr></thead><tbody>'+filas+'</tbody></table>'
+      : '<p class="cargando">Sin l&iacute;neas</p>')+
+  '</article>';
+}
+
+async function cargar(){
+  var desde=_pagina*POR_PAGINA, hasta=desde+POR_PAGINA-1;
+  var btn=document.getElementById('btn-mas'); btn.disabled=true;
+  var r = await sb.from('albaranes_cab')
+    .select('id,ejercicio,serie,numero,fecha,total,albaranes_lin(orden,codigo_articulo,descripcion,cajas,unidades,precio)')
+    .eq('cliente_codigo', _cod)
+    .order('fecha', {ascending:false})
+    .order('numero', {ascending:false})
+    .range(desde, hasta);
+  btn.disabled=false;
+  var lista=document.getElementById('lista');
+  if(r.error){ lista.innerHTML='<p class="vacio">No se pudieron cargar los pedidos. Recarga la p&aacute;gina.</p>'; console.error(r.error); return; }
+  var datos=r.data||[];
+  if(_pagina===0){
+    lista.innerHTML = datos.length ? '' : '<p class="vacio">No hay pedidos en los &uacute;ltimos meses.</p>';
+  }
+  lista.insertAdjacentHTML('beforeend', datos.map(tarjeta).join(''));
+  _pagina++;
+  btn.style.display = (datos.length===POR_PAGINA) ? 'block' : 'none';
+}
+
+sb.auth.getSession().then(async function(res){
+  var session = res.data && res.data.session;
+  var chk;
+  if(_adminCli){
+    if(!session || !session.user){ location.replace('admin.html'); return; }
+    var adm = await sb.rpc('es_admin');
+    if(adm.error || adm.data !== true){ location.replace('admin.html'); return; }
+    chk = await sb.from('clientes').select('codigo,nombre,nombre_comercial').eq('codigo', _adminCli).single();
+    var b=document.createElement('div'); b.className='admin-banner';
+    b.innerHTML='&#128274; MODO ADMINISTRADOR &middot; Pedidos de '+esc(_adminCli);
+    document.body.insertBefore(b, document.body.firstChild);
+  } else {
+    if(!session || !session.user){ location.replace('tienda.html'); return; }
+    chk = await sb.from('clientes').select('codigo,nombre,nombre_comercial,puede_acceder').eq('email', String(session.user.email||'').toLowerCase()).single();
+    if(chk.error || !chk.data || !chk.data.puede_acceder){ location.replace('tienda.html'); return; }
+  }
+  if(chk.error || !chk.data){ document.getElementById('lista').innerHTML='<p class="vacio">No se pudieron cargar los datos del cliente.</p>'; return; }
+  _cod = chk.data.codigo || '';
+  _nombre = chk.data.nombre || '';
+  _nomCom = chk.data.nombre_comercial || '';
+  document.getElementById('cli').innerHTML='Cliente <b>'+esc(_cod)+'</b> &middot; '+esc(_nomCom||_nombre);
+  cargar();
+});
+</script>
+</body>
+</html>
