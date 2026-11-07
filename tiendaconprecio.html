@@ -1962,8 +1962,9 @@ function _menuCliente(op){
   if(op==='salir'){ cerrarSesion(); return; }
   var destino=MENU_PAGINAS[op];
   if(!destino){ _avisoMenu('Esta secci\u00f3n estar\u00e1 disponible muy pronto.'); return; }
-  // El carrito se guarda en la sesion del navegador: al volver a la tienda sigue ahi
-  location.href=destino;
+  // El carrito se guarda en la sesion del navegador: al volver a la tienda sigue ahi.
+  // El ?v= evita que el movil muestre una version antigua guardada en su cache.
+  location.href=destino+(destino.indexOf('?')<0?'?':'&')+'v='+Date.now();
 }
 document.addEventListener('click',function(e){
   var w=document.querySelector('.menu-wrap');
