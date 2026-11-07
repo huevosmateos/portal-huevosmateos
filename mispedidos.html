@@ -103,7 +103,7 @@ table.lin td.imp,table.lin b.imp{font-weight:700;color:var(--azul)}
       <span class="tel-num">639 75 55 93</span>
     </div>
   </div>
-  <a href="tiendaconprecio.html" class="btn-volver"><span class="flecha">&#8592;</span><span><span class="txt-largo">Volver a la </span><span class="txt-tienda">tienda</span></span></a>
+  <a href="tiendaconprecio.html" class="btn-volver" onclick="location.href='tiendaconprecio.html?v='+Date.now();return false;"><span class="flecha">&#8592;</span><span><span class="txt-largo">Volver a la </span><span class="txt-tienda">tienda</span></span></a>
 </div></header>
 
 <main>
@@ -146,7 +146,7 @@ function repetirPedido(id){
   if(!lineas.length){ alert('Este albar\u00e1n no tiene art\u00edculos para a\u00f1adir.'); return; }
   try{ sessionStorage.setItem('hm_repetir', JSON.stringify({alb:a.serie+'/'+a.numero, fecha:fFecha(a.fecha), lineas:lineas})); }
   catch(e){ alert('No se ha podido preparar el pedido. Int\u00e9ntalo de nuevo.'); return; }
-  location.href='tiendaconprecio.html';
+  location.href='tiendaconprecio.html?v='+Date.now();
 }
 
 function tarjeta(a){
