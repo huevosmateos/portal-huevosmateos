@@ -37,6 +37,10 @@ main{max-width:1000px;margin:0 auto;padding:22px 20px 60px}
 .dato label{font-size:10.5px;color:#c9c6ff;text-transform:uppercase;letter-spacing:.04em;font-weight:700;white-space:nowrap}
 .dato span{display:block;font-weight:700;color:#fff;font-size:16px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .dato.total{margin-left:auto;text-align:right}
+.btn-repetir{margin-left:auto;align-self:center;display:inline-flex;align-items:center;gap:8px;background:var(--yema);color:#1d1d27;border:0;border-radius:9px;padding:9px 16px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.btn-repetir:hover{filter:brightness(1.06)}
+.btn-repetir svg{flex-shrink:0}
+.dato.total + .btn-repetir{margin-left:18px}
 .estado{display:block;margin:0;padding:5px 10px;font-size:12px;font-weight:700;color:#7a5200;background:#fff4d1;border-bottom:1px solid #f5d77a}
 table.lin{width:100%;border-collapse:collapse;font-size:14px}
 @media(min-width:641px){table.lin{table-layout:fixed}table.lin th:nth-child(1){width:90px}table.lin th:nth-child(3),table.lin th:nth-child(4),table.lin th:nth-child(5),table.lin th:nth-child(6){width:105px}}
@@ -68,7 +72,9 @@ table.lin td.imp,table.lin b.imp{font-weight:700;color:var(--azul)}
   .btn-volver .txt-tienda{text-transform:capitalize}
   main{padding:16px 10px 50px}
   .cab-pag h1{font-size:24px}
-  .alb-cab{gap:6px 14px;padding:9px 12px;flex-wrap:nowrap}
+  .alb-cab{gap:6px 11px;padding:8px 10px;flex-wrap:nowrap}
+  .btn-repetir{flex-direction:column;gap:1px;padding:5px 8px;font-size:11px;line-height:1.1;border-radius:8px}
+  .btn-repetir .txt-largo{display:none}
   .dato label{font-size:9.5px}
   .dato span{font-size:14.5px}
   .dato.total{display:none}
@@ -129,7 +135,22 @@ function nf(v,dec){ if(v==null||v==='') return ''; return Number(v).toLocaleStri
 function fFecha(iso){ if(!iso) return ''; var p=String(iso).slice(0,10).split('-'); return p[2]+'-'+p[1]+'-'+p[0]; }
 function hoyIso(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 
+var _albs = {};
+// Añade al carrito las lineas del albaran y abre la tienda. Los precios NO se copian:
+// la tienda calcula los de hoy (tarifa, precio especial y promociones vigentes).
+function repetirPedido(id){
+  var a=_albs[id]; if(!a) return;
+  var lineas=(a.albaranes_lin||[]).filter(function(l){
+    return l.codigo_articulo && !(Number(l.precio)===0);      // las lineas a precio 0 son regalos de promocion
+  }).map(function(l){ return {c:l.codigo_articulo, cajas:Number(l.cajas)||0, uds:Number(l.unidades)||0, d:l.descripcion||''}; });
+  if(!lineas.length){ alert('Este albar\u00e1n no tiene art\u00edculos para a\u00f1adir.'); return; }
+  try{ sessionStorage.setItem('hm_repetir', JSON.stringify({alb:a.serie+'/'+a.numero, fecha:fFecha(a.fecha), lineas:lineas})); }
+  catch(e){ alert('No se ha podido preparar el pedido. Int\u00e9ntalo de nuevo.'); return; }
+  location.href='tiendaconprecio.html';
+}
+
 function tarjeta(a){
+  _albs[a.id]=a;
   var lins=(a.albaranes_lin||[]).slice().sort(function(x,y){return (x.orden||0)-(y.orden||0);});
   var pendiente = a.fecha && String(a.fecha).slice(0,10) > hoyIso();
   var filas = lins.map(function(l){
@@ -151,6 +172,9 @@ function tarjeta(a){
       '<div class="dato"><label>Serie</label><span>'+esc(a.serie)+'</span></div>'+
       '<div class="dato"><label>N&ordm; albar&aacute;n</label><span>'+esc(a.numero)+'</span></div>'+
       '<div class="dato fecha"><label>Fecha</label><span>'+fFecha(a.fecha)+'</span></div>'+
+      (lins.length?'<button type="button" class="btn-repetir" onclick="repetirPedido(\''+esc(a.id)+'\')" title="A&ntilde;adir al carrito este pedido con los precios de hoy">'+
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>'+
+        '<span>A&ntilde;adir<span class="txt-largo"> al carrito</span></span></button>':'')+
       (a.total!=null?'<div class="dato total"><label>Importe</label><span>'+nf(a.total,2)+' &euro;</span></div>':'')+
     '</div>'+
     (pendiente?'<div class="estado">Pendiente de servir</div>':'')+
