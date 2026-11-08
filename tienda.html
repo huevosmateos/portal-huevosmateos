@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d0190">
+<script>(function(){var d=document.documentElement;if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))d.classList.add('hm-es-movil');if((window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone)d.classList.add('hm-app-instalada');})();</script>
 <title>Tienda - Huevos Mateos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -107,6 +109,9 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 .nav-login input#nav-email{width:280px}
 .nav-btn-acceso{background:var(--yema);color:#1d1d27;border:0;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 .nav-btn-acceso:hover{background:#e0a400}
+/* Boton "Instalar app" junto a Acceso clientes: solo en el movil y si la app no esta instalada */
+.nav-btn-instalar{display:none;background:var(--azul);color:#fff;border:0;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+html.hm-es-movil:not(.hm-app-instalada) .nav-btn-instalar{display:inline-block}
 .hm-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:center;justify-content:center}
 .hm-box{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:420px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.25);transition:transform .25s ease}
 .hm-box.hm-subir{transform:translateY(-1.5cm)}
@@ -157,8 +162,9 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
   .nav a{padding:10px 12px;font-size:13px}
   .nav-buscador{order:10;width:100%;padding:6px 0 8px}
   .nav-buscador input{max-width:100%}
-  #nav-login-widget{width:100%}
-  .nav-btn-acceso{width:100%;text-align:center;padding:10px}
+  #nav-login-widget{width:100%;display:flex;gap:8px}
+  .nav-btn-acceso{width:100%;flex:1 1 auto;text-align:center;padding:10px}
+  .nav-btn-instalar{flex:0 0 auto;padding:10px 14px}
   .nav-logged{width:100%;justify-content:space-between}
 
   /* Main tienda */
@@ -294,7 +300,13 @@ sb.auth.onAuthStateChange(async function(event, session){
 
 function mostrarLoginWidget(){
   var w = document.getElementById('nav-login-widget'); if(!w) return;
-  w.innerHTML = '<button class="nav-btn-acceso" onclick="abrirLogin()">&#128274; Acceso clientes</button>';
+  w.innerHTML = '<button class="nav-btn-acceso" onclick="abrirLogin()">&#128274; Acceso clientes</button>' +
+    '<button class="nav-btn-instalar" type="button" onclick="pedirInstalar()">&#128242; Instalar app</button>';
+}
+// La app solo la pueden instalar clientes con sesion: primero se entra y luego, ya en la tienda, se instala
+function pedirInstalar(){
+  try{ sessionStorage.setItem('hm_quiere_instalar','1'); }catch(e){}
+  abrirLogin();
 }
 function abrirLogin(){
   document.getElementById('hm-modal').style.display = 'flex';

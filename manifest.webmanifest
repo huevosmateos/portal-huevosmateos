@@ -1,0 +1,32 @@
+{
+  "name": "Huevos Mateos Tienda",
+  "short_name": "Huevos Mateos",
+  "description": "Haz tus pedidos a Huevos Mateos desde el móvil.",
+  "lang": "es",
+  "start_url": "tiendaconprecio.html?origen=app",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0d0190",
+  "icons": [
+    {
+      "src": "assets/icono-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icono-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icono-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
