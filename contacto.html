@@ -115,6 +115,9 @@ main{max-width:1180px;margin:0 auto;padding:0 20px}
   .hero h1{font-size:30px}
   .pie-cats{column-count:1}
 }
+.campo-error{margin:-6px 0 10px;color:#b42318;font-size:13.5px;font-weight:600}
+.cont-form input.mal{border-color:#d92d20!important;background:#fff5f4}
+.campo-trampa{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 </style>
 </head>
 <body>
@@ -134,104 +137,109 @@ main{max-width:1180px;margin:0 auto;padding:0 20px}
       <h2>Escribenos</h2>
       <label><span>Tu nombre</span><input id="f-nombre" required></label>
       <label><span>Tu email</span><input id="f-email" type="email"></label>
-      <label><span>Tu telefono</span><input id="f-tel" required></label>
+      <label><span>Tu tel&eacute;fono</span><input id="f-tel" type="tel" inputmode="tel" autocomplete="tel" required placeholder="Ej.: 612 345 678"></label>
+      <div id="tel-error" class="campo-error" role="alert" hidden>Escribe un tel&eacute;fono v&aacute;lido de 9 cifras (m&oacute;vil o fijo de Espa&ntilde;a).</div>
       <label><span>Asunto</span><input id="f-asunto"></label>
       <label><span>Mensaje</span><textarea id="f-msg" rows="5"></textarea></label>
+      <div class="campo-trampa" aria-hidden="true"><label>Web<input id="f-web" tabindex="-1" autocomplete="off"></label></div>
       <div id="form-msg" style="display:none;margin-top:14px;padding:14px 18px;border-radius:8px;font-size:15px;font-weight:500"></div>
-      <button class="btn" type="button" id="btn-enviar" tabindex="-1" onclick="enviar(event)">Enviar mensaje</button>
+      <button class="btn" type="button" id="btn-enviar" onclick="enviar(event)">Enviar mensaje</button>
     </form>
     <aside class="cont-datos">
       <h2>Datos de contacto</h2>
-      <p><b>Direccion</b><br>Huevos Mateos, S.L.<br>Avda. Martin Palomino, 42 - 10600 Plasencia (Caceres)</p>
+      <p><b>Direccion</b><br>Huevos Mateos, S.L.<br>Avda. Martín Palomino, 42 - 10600 Plasencia (Cáceres)</p>
       <p><b>Telefono</b><br>927 415 311 - 639 75 55 93</p>
       <p><b>Email</b><br><a href="mailto:correo@huevosmateos.es">correo@huevosmateos.es</a></p>
     </aside>
   </div>
 </main>
 <script>
-function arrancarServidor(){
-  var iframe = document.createElement('iframe');
-  iframe.style.display = 'none';
-  iframe.src = 'huevosmateos://arrancar';
-  document.body.appendChild(iframe);
-  setTimeout(function(){ document.body.removeChild(iframe); }, 3000);
+var SUPABASE_URL = 'https://pkwttturncewwdlpxrxz.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3R0dHVybmNld3dkbHB4cnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTQ1OTEsImV4cCI6MjA5NTczMDU5MX0.aFKZbuO-0zO--SckT-FnjkGdOAV5nBWeEoLgMcV80VY';
+var CAMPOS = ['f-nombre','f-email','f-tel','f-asunto','f-msg'];
+
+// Telefono espanol: 9 cifras empezando por 6, 7, 8 o 9 (admite +34 / 0034 delante)
+function telefonoValido(t){
+  var d = (t||'').replace(/[\s\-\.\(\)]/g,'');
+  if(d.indexOf('+34')===0) d = d.slice(3); else if(d.indexOf('0034')===0) d = d.slice(4);
+  return /^[6789]\d{8}$/.test(d);
+}
+function marcarTelefono(){
+  var el = document.getElementById('f-tel'), ok = telefonoValido(el.value);
+  document.getElementById('tel-error').hidden = ok;
+  el.classList.toggle('mal', !ok);
+  return ok;
 }
 
-// Enter actua como tabulador en los campos del formulario
 (function(){
-  var campos = ['f-nombre','f-email','f-tel','f-asunto','f-msg'];
-  campos.forEach(function(id, i){
+  var tel = document.getElementById('f-tel');
+  // No se puede pasar a Asunto, Mensaje o Enviar con un telefono incorrecto (si se puede volver a Nombre o Email)
+  tel.addEventListener('blur', function(e){
+    var destino = e.relatedTarget ? e.relatedTarget.id : '';
+    var hacia_delante = ['f-asunto','f-msg','btn-enviar'].indexOf(destino) >= 0;
+    if(!marcarTelefono() && (hacia_delante || tel.value.trim())){
+      if(hacia_delante || !destino) setTimeout(function(){ tel.focus(); }, 0);
+    }
+  });
+  tel.addEventListener('input', function(){ if(tel.classList.contains('mal')) marcarTelefono(); });
+  // Si toca Asunto o Mensaje sin telefono correcto, vuelve al telefono
+  ['f-asunto','f-msg'].forEach(function(id){
+    document.getElementById(id).addEventListener('focus', function(){
+      if(!telefonoValido(tel.value)){ marcarTelefono(); tel.focus(); }
+    });
+  });
+  // Enter actua como tabulador, pero no deja salir del telefono si no es correcto
+  CAMPOS.forEach(function(id, i){
     var el = document.getElementById(id);
-    if(!el) return;
     el.addEventListener('keydown', function(e){
       if(e.key === 'Enter' && el.tagName !== 'TEXTAREA'){
         e.preventDefault();
-        var siguiente = document.getElementById(campos[i+1]);
-        if(siguiente) siguiente.focus();
+        if(id === 'f-tel' && !marcarTelefono()) return;
+        var sig = document.getElementById(CAMPOS[i+1]);
+        if(sig) sig.focus();
       }
     });
   });
 })();
 
+function aviso(tipo, texto){
+  var m = document.getElementById('form-msg');
+  var c = {ok:['#d1e7dd','#0a3622','#a3cfbb'], aviso:['#fff3cd','#856404','#ffc107'], error:['#f8d7da','#58151c','#f1aeb5']}[tipo];
+  m.style.display='block'; m.style.background=c[0]; m.style.color=c[1]; m.style.border='1px solid '+c[2];
+  m.textContent = texto;
+}
+
 function enviar(ev){
   if(ev) ev.preventDefault();
-  var nombre   = (document.getElementById('f-nombre').value  ||'').trim();
-  var email    = (document.getElementById('f-email').value   ||'').trim();
-  var telefono = (document.getElementById('f-tel').value     ||'').trim();
-  var asunto   = (document.getElementById('f-asunto').value  ||'').trim();
-  var mensaje  = (document.getElementById('f-msg').value     ||'').trim();
-  var msgDiv   = document.getElementById('form-msg');
-  var btn      = document.getElementById('btn-enviar');
+  var v = function(id){ return (document.getElementById(id).value||'').trim(); };
+  var datos = {nombre:v('f-nombre'), email:v('f-email'), telefono:v('f-tel'), asunto:v('f-asunto'), mensaje:v('f-msg'), web:v('f-web')};
+  var btn = document.getElementById('btn-enviar');
 
-  // Validar telefono: minimo 9 digitos
-  var soloDigitos = telefono.replace(/[\s\-\.]/g,'');
-  if(!telefono || !/^\d[\d\s\-\.]{7,}$/.test(telefono) || soloDigitos.length < 9){
-    msgDiv.style.display='block';
-    msgDiv.style.background='#fff3cd';
-    msgDiv.style.color='#856404';
-    msgDiv.style.border='1px solid #ffc107';
-    msgDiv.textContent='Por favor introduce un numero de telefono valido (minimo 9 digitos).';
-    document.getElementById('f-tel').focus();
-    return false;
-  }
+  if(!datos.nombre){ aviso('aviso','Escribe tu nombre.'); document.getElementById('f-nombre').focus(); return false; }
+  if(!marcarTelefono()){ aviso('aviso','Escribe un teléfono válido de 9 cifras.'); document.getElementById('f-tel').focus(); return false; }
+  if(datos.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.email)){ aviso('aviso','Revisa el email: no parece correcto.'); document.getElementById('f-email').focus(); return false; }
+  if(!datos.mensaje){ aviso('aviso','Escribe tu mensaje.'); document.getElementById('f-msg').focus(); return false; }
 
-  btn.disabled=true; btn.textContent='Enviando...';
-  msgDiv.style.display='none';
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  document.getElementById('form-msg').style.display = 'none';
 
-  // Arrancar servidor via protocolo personalizado
-  arrancarServidor();
-
-  // Esperar 2 segundos a que arranque y luego enviar
-  setTimeout(function(){
-    fetch('http://localhost:8765/contacto',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({nombre:nombre, email:email, telefono:telefono, asunto:asunto, mensaje:mensaje})
-    })
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data.ok){
-        msgDiv.style.display='block';
-        msgDiv.style.background='#d1e7dd';
-        msgDiv.style.color='#0a3622';
-        msgDiv.style.border='1px solid #a3cfbb';
-        msgDiv.textContent='Su solicitud ha sido enviada correctamente. Contactaremos con usted a la mayor brevedad posible.';
-        btn.style.display='none';
-        document.querySelector('.cont-form').reset();
-      } else {
-        throw new Error(data.error||'Error desconocido');
-      }
-    })
-    .catch(function(){
-      msgDiv.style.display='block';
-      msgDiv.style.background='#f8d7da';
-      msgDiv.style.color='#58151c';
-      msgDiv.style.border='1px solid #f1aeb5';
-      msgDiv.textContent='No se pudo enviar el mensaje. Por favor llamenos al 639 75 55 93.';
-      btn.disabled=false; btn.textContent='Enviar mensaje';
-    });
-  }, 2000);
-
+  // La funcion se llama enviar-contacto en Supabase, pero su direccion es smooth-endpoint
+  fetch(SUPABASE_URL + '/functions/v1/smooth-endpoint', {
+    method:'POST',
+    headers:{'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY},
+    body: JSON.stringify(datos)
+  })
+  .then(function(r){ return r.json().catch(function(){ return {ok:false}; }); })
+  .then(function(r){
+    if(!r.ok) throw new Error(r.error||'error');
+    aviso('ok','Tu mensaje se ha enviado correctamente. Te contestaremos lo antes posible.');
+    btn.style.display = 'none';
+    document.getElementById('cont-form').reset();
+  })
+  .catch(function(){
+    aviso('error','No se ha podido enviar el mensaje. Llámanos al 639 75 55 93 o al 927 415 311.');
+    btn.disabled = false; btn.textContent = 'Enviar mensaje';
+  });
   return false;
 }
 </script>
@@ -239,7 +247,7 @@ function enviar(ev){
 <footer class="pie"><div class="pie-inner">
   <div>
     <div class="pie-logo">Huevos <b>Mateos</b></div>
-    <p>Avda. Martin Palomino, 42 - 10600 Plasencia (Caceres)</p>
+    <p>Avda. Martín Palomino, 42 - 10600 Plasencia (Cáceres)</p>
     <p>Tel: 927 415 311 - 639 75 55 93<br>Email: correo@huevosmateos.es</p>
 
     <div class="pie-info-block">

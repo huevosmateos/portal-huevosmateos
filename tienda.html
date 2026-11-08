@@ -303,9 +303,11 @@ function mostrarLoginWidget(){
   w.innerHTML = '<button class="nav-btn-acceso" onclick="abrirLogin()">&#128274; Acceso clientes</button>' +
     '<button class="nav-btn-instalar" type="button" onclick="pedirInstalar()">&#128242; Instalar app</button>';
 }
-// La app solo la pueden instalar clientes con sesion: primero se entra y luego, ya en la tienda, se instala
+// "Instalar app": el cliente entra (o se da de alta) con el proceso normal de Acceso clientes y,
+// en cuanto tiene sesion en la tienda con precios, se le ofrece instalar. Se recuerda 7 dias en este movil
+// porque el alta puede quedar pendiente de autorizacion o el enlace del correo puede abrirse en otra pestana.
 function pedirInstalar(){
-  try{ sessionStorage.setItem('hm_quiere_instalar','1'); }catch(e){}
+  try{ localStorage.setItem('hm_quiere_instalar', String(Date.now())); }catch(e){}
   abrirLogin();
 }
 function abrirLogin(){
@@ -750,7 +752,7 @@ window.addEventListener('resize',function(){
 <footer class="pie"><div class="pie-inner">
   <div>
     <div class="pie-logo">Huevos <b>Mateos</b></div>
-    <p>Avda. Martin Palomino, 42 - 10600 Plasencia (Caceres)</p>
+    <p>Avda. Martín Palomino, 42 - 10600 Plasencia (Cáceres)</p>
     <p>Tel: 927 415 311 - 639 75 55 93<br>Email: correo@huevosmateos.es</p>
 
     <div class="pie-info-block">
