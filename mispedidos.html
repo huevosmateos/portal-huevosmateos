@@ -43,14 +43,19 @@ main{max-width:1000px;margin:0 auto;padding:22px 20px 60px}
 .alb-cab{display:flex;align-items:flex-end;gap:10px 26px;padding:10px 16px;background:var(--azul);color:#fff}
 .dato{display:flex;flex-direction:column;gap:1px;min-width:0}
 .dato label{font-size:10.5px;color:#c9c6ff;text-transform:uppercase;letter-spacing:.04em;font-weight:700;white-space:nowrap}
-.dato span{display:block;font-weight:700;color:#fff;font-size:16px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dato > span{display:block;font-weight:700;color:#fff;font-size:16px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .dato.total{margin-left:auto;text-align:right}
+.dato label .ct{display:none}
 .btn-repetir{margin-left:auto;align-self:center;display:inline-flex;align-items:center;gap:8px;background:var(--yema);color:#1d1d27;border:0;border-radius:9px;padding:9px 16px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .btn-repetir:hover{filter:brightness(1.06)}
 .btn-repetir svg{flex-shrink:0}
 .dato.total + .btn-repetir{margin-left:18px}
 .estado{display:block;margin:0;padding:5px 10px;font-size:12px;font-weight:700;color:#7a5200;background:#fff4d1;border-bottom:1px solid #f5d77a}
 table.lin{width:100%;border-collapse:collapse;font-size:14px}
+/* Moviles estrechos: el ejercicio ya va en la fecha, se oculta para que quepa el total */
+@media(max-width:390px){ .dato.ejer{display:none} .alb-cab{gap:6px 8px!important;padding:8px 8px!important} .dato > span{font-size:13.5px} }
+.alb-pie{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px 18px;padding:9px 14px;background:#eef0ff;border-top:1px solid var(--linea);font-size:13.5px;color:var(--gris)}
+.alb-pie b{color:var(--azul)}
 @media(min-width:641px){table.lin{table-layout:fixed}table.lin th:nth-child(1){width:90px}table.lin th:nth-child(3),table.lin th:nth-child(4),table.lin th:nth-child(5),table.lin th:nth-child(6){width:105px}}
 table.lin th{text-align:left;font-size:12px;color:var(--gris);font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:7px 12px;border-bottom:1px solid var(--linea);background:#fff}
 table.lin td{padding:7px 12px;border-bottom:1px solid var(--linea);vertical-align:top}
@@ -84,8 +89,13 @@ table.lin td.imp,table.lin b.imp{font-weight:700;color:var(--azul)}
   .btn-repetir{flex-direction:column;gap:1px;padding:5px 8px;font-size:11px;line-height:1.1;border-radius:8px}
   .btn-repetir .txt-largo{display:none}
   .dato label{font-size:9.5px}
-  .dato span{font-size:14.5px}
-  .dato.total{display:none}
+  .dato > span{font-size:14.5px}
+  .alb-cab{gap:6px 9px!important}
+  .dato label .lg{display:none}
+  .dato label .ct{display:inline}
+  .dato > span{font-size:14px}
+  .dato.total{margin-left:auto}
+  .dato.total + .btn-repetir{margin-left:4px}
   table.lin thead{display:none}
   table.lin,table.lin tbody{display:block;width:100%}
   table.lin tr{display:grid;grid-template-columns:auto 1fr;column-gap:8px;padding:8px 12px;border-bottom:1px solid var(--linea)}
@@ -140,6 +150,7 @@ var _cod = '', _nombre = '', _nomCom = '', _pagina = 0;
 
 function esc(s){var d=document.createElement('div');d.textContent=(s==null?'':String(s));return d.innerHTML;}
 function nf(v,dec){ if(v==null||v==='') return ''; return Number(v).toLocaleString('es-ES',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+function fFechaCorta(iso){ if(!iso) return ''; var p=String(iso).slice(0,10).split('-'); return p[2]+'-'+p[1]+'-'+p[0].slice(2); }
 function fFecha(iso){ if(!iso) return ''; var p=String(iso).slice(0,10).split('-'); return p[2]+'-'+p[1]+'-'+p[0]; }
 function hoyIso(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 
@@ -155,6 +166,19 @@ function repetirPedido(id){
   try{ sessionStorage.setItem('hm_repetir', JSON.stringify({alb:a.serie+'/'+a.numero, fecha:fFecha(a.fecha), lineas:lineas})); }
   catch(e){ alert('No se ha podido preparar el pedido. Int\u00e9ntalo de nuevo.'); return; }
   location.href='tiendaconprecio.html?v='+Date.now();
+}
+
+// Resumen al pie cuando el cliente tiene descuento: las lineas llevan el precio sin descuento
+function pieAlbaran(a, lins){
+  var dto = Number(a.descuento)||0;
+  if(dto <= 0) return '';
+  var suma = lins.reduce(function(t,l){
+    var imp = (l.importe_bruto!=null) ? Number(l.importe_bruto) : (Number(l.unidades)||0)*(Number(l.precio)||0);
+    return t + imp;
+  }, 0);
+  return '<div class="alb-pie"><span>Suma <b>'+nf(suma,2)+' &euro;</b></span>'+
+         '<span>Descuento <b>'+nf(dto, dto%1 ? 2 : 0)+' %</b></span>'+
+         (a.total!=null ? '<span>Total con IVA <b>'+nf(a.total,2)+' &euro;</b></span>' : '')+'</div>';
 }
 
 function tarjeta(a){
@@ -176,31 +200,37 @@ function tarjeta(a){
   }).join('');
   return '<article class="alb">'+
     '<div class="alb-cab">'+
-      '<div class="dato"><label>Ejercicio</label><span>'+esc(a.ejercicio)+'</span></div>'+
+      '<div class="dato ejer"><label><span class="lg">Ejercicio</span><span class="ct">Ejer.</span></label><span>'+esc(a.ejercicio)+'</span></div>'+
       '<div class="dato"><label>Serie</label><span>'+esc(a.serie)+'</span></div>'+
-      '<div class="dato"><label>N&ordm; albar&aacute;n</label><span>'+esc(a.numero)+'</span></div>'+
-      '<div class="dato fecha"><label>Fecha</label><span>'+fFecha(a.fecha)+'</span></div>'+
+      '<div class="dato"><label>N&ordm; <span class="lg">albar&aacute;n</span><span class="ct">alb.</span></label><span>'+esc(a.numero)+'</span></div>'+
+      '<div class="dato fecha"><label>Fecha</label><span>'+fFechaCorta(a.fecha)+'</span></div>'+
+      '<div class="dato total"><label>Total</label><span>'+(a.total!=null?nf(a.total,2)+' &euro;':'&ndash;')+'</span></div>'+
       (lins.length?'<button type="button" class="btn-repetir" onclick="repetirPedido(\''+esc(a.id)+'\')" title="A&ntilde;adir al carrito este pedido con los precios de hoy">'+
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>'+
         '<span>A&ntilde;adir<span class="txt-largo"> al carrito</span></span></button>':'')+
-      (a.total!=null?'<div class="dato total"><label>Importe</label><span>'+nf(a.total,2)+' &euro;</span></div>':'')+
     '</div>'+
     (pendiente?'<div class="estado">Pendiente de servir</div>':'')+
     (lins.length
       ? '<table class="lin"><thead><tr><th>C&oacute;digo</th><th>Descripci&oacute;n art&iacute;culo</th><th class="n">Cajas</th><th class="n">Unidades</th><th class="n">Precio</th><th class="n">Importe</th></tr></thead><tbody>'+filas+'</tbody></table>'
       : '<p class="cargando">Sin l&iacute;neas</p>')+
+    pieAlbaran(a, lins)+
   '</article>';
 }
 
 async function cargar(){
   var desde=_pagina*POR_PAGINA, hasta=desde+POR_PAGINA-1;
   var btn=document.getElementById('btn-mas'); btn.disabled=true;
-  var r = await sb.from('albaranes_cab')
-    .select('id,ejercicio,serie,numero,fecha,total,albaranes_lin(orden,codigo_articulo,descripcion,cajas,unidades,precio,importe_bruto)')
-    .eq('cliente_codigo', _cod)
-    .order('fecha', {ascending:false})
-    .order('numero', {ascending:false})
-    .range(desde, hasta);
+  var LIN='albaranes_lin(orden,codigo_articulo,descripcion,cajas,unidades,precio,importe_bruto)';
+  function consulta(campos){
+    return sb.from('albaranes_cab').select(campos+','+LIN)
+      .eq('cliente_codigo', _cod)
+      .order('fecha', {ascending:false})
+      .order('numero', {ascending:false})
+      .range(desde, hasta);
+  }
+  var r = await consulta('id,ejercicio,serie,numero,fecha,total,descuento');
+  // Si en Supabase aun no existe la columna descuento, se cargan los pedidos sin ella
+  if(r.error){ console.warn(r.error); r = await consulta('id,ejercicio,serie,numero,fecha,total'); }
   btn.disabled=false;
   var lista=document.getElementById('lista');
   if(r.error){ lista.innerHTML='<p class="vacio">No se pudieron cargar los pedidos. Recarga la p&aacute;gina.</p>'; console.error(r.error); return; }
