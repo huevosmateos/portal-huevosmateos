@@ -134,9 +134,12 @@
   // sin haber entrado; tras iniciar sesion, en la tienda privada se le ofrece el boton de instalar.
   function ofrecerTrasLogin() {
     var quiere = false;
-    try { quiere = sessionStorage.getItem('hm_quiere_instalar') === '1'; } catch (e) {}
+    try {
+      var t = parseInt(localStorage.getItem('hm_quiere_instalar') || '0', 10);
+      quiere = t && (Date.now() - t) < 7 * 86400000;      // pedido en los ultimos 7 dias
+    } catch (e) {}
     if (!quiere || !window.HM_PAGINA_PRIVADA || instalada) return;
-    try { sessionStorage.removeItem('hm_quiere_instalar'); } catch (e) {}
+    try { localStorage.removeItem('hm_quiere_instalar'); } catch (e) {}
     try { localStorage.removeItem(CLAVE); } catch (e) {}
     mostrarBanner();
   }
