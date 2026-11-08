@@ -54,8 +54,11 @@ main{max-width:1000px;margin:0 auto;padding:22px 20px 60px}
 table.lin{width:100%;border-collapse:collapse;font-size:14px}
 /* Moviles estrechos: el ejercicio ya va en la fecha, se oculta para que quepa el total */
 @media(max-width:390px){ .dato.ejer{display:none} .alb-cab{gap:6px 8px!important;padding:8px 8px!important} .dato > span{font-size:13.5px} }
-.alb-pie{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px 18px;padding:9px 14px;background:#eef0ff;border-top:1px solid var(--linea);font-size:13.5px;color:var(--gris)}
+.alb-pie{display:flex;flex-wrap:nowrap;white-space:nowrap;justify-content:flex-end;gap:4px 18px;padding:9px 14px;background:#eef0ff;border-top:1px solid var(--linea);font-size:13.5px;color:var(--gris)}
 .alb-pie b{color:var(--azul)}
+.alb-pie .ct{display:none}
+@media(max-width:640px){ .alb-pie{gap:12px;padding:8px 10px;font-size:13px;justify-content:space-between} .alb-pie .lg{display:none} .alb-pie .ct{display:inline} }
+@media(max-width:360px){ .alb-pie{gap:8px;font-size:12px} }
 @media(min-width:641px){table.lin{table-layout:fixed}table.lin th:nth-child(1){width:90px}table.lin th:nth-child(3),table.lin th:nth-child(4),table.lin th:nth-child(5),table.lin th:nth-child(6){width:105px}}
 table.lin th{text-align:left;font-size:12px;color:var(--gris);font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:7px 12px;border-bottom:1px solid var(--linea);background:#fff}
 table.lin td{padding:7px 12px;border-bottom:1px solid var(--linea);vertical-align:top}
@@ -177,8 +180,8 @@ function pieAlbaran(a, lins){
     return t + imp;
   }, 0);
   return '<div class="alb-pie"><span>Suma <b>'+nf(suma,2)+' &euro;</b></span>'+
-         '<span>Descuento <b>'+nf(dto, dto%1 ? 2 : 0)+' %</b></span>'+
-         (a.total!=null ? '<span>Total con IVA <b>'+nf(a.total,2)+' &euro;</b></span>' : '')+'</div>';
+         '<span><span class="lg">Descuento</span><span class="ct">Dto.</span> <b>'+nf(dto, dto%1 ? 2 : 0)+' %</b></span>'+
+         (a.total!=null ? '<span><span class="lg">Total con IVA</span><span class="ct">Total IVA</span> <b>'+nf(a.total,2)+' &euro;</b></span>' : '')+'</div>';
 }
 
 function tarjeta(a){
