@@ -270,6 +270,7 @@ main.tienda{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:co
 .cqty-btn:hover{background:#0d0190;color:#fff}
 .cqty-val{width:28px;text-align:center;font-size:14px;font-weight:600}
 .cart-foot{padding:16px 20px;border-top:2px solid #e7e7ef}
+.cart-dto{display:flex;justify-content:space-between;align-items:center;margin:0 0 6px;font-size:14px;font-weight:700;color:#1a7a4a}
 .cart-total{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .cart-total strong{font-size:18px}
 .cart-total-val{font-size:22px;font-weight:700;color:#0d0190}
@@ -548,6 +549,7 @@ function _marcarFamilia(f){
   return hecho;
 }
 var PRODUCTOS=[], ORDEN_FAM=[], IMG={};
+var _dtoCliente=0;   // % de descuento fijo del cliente (columna descuento de clientes)
 var _tarifa=1, _clienteCod='', _clienteNombre='', _tipoIva='I', _codigoRuta=null, _ofertas={}, _verCache=Date.now();
 function _buildIndex(){
   IMG={};
@@ -843,6 +845,11 @@ sb.auth.getSession().then(async function(r){
   _clienteCod = chk.data.codigo || '';
   _clienteNombre = chk.data.nombre || '';
   _tipoIva = chk.data.tipo_iva || 'I';
+  // Descuento fijo del cliente (consulta aparte: si fallara, la tienda sigue funcionando sin descuento)
+  try{
+    var rd = await sb.from('clientes').select('descuento').eq('codigo', _clienteCod).single();
+    _dtoCliente = (!rd.error && rd.data) ? (Number(rd.data.descuento)||0) : 0;
+  }catch(e){ _dtoCliente = 0; }
   _codigoRuta = (chk.data.codigo_ruta !== null && chk.data.codigo_ruta !== undefined) ? parseInt(chk.data.codigo_ruta, 10) : null;
   _tarifa =chk.data.tarifa !== null && chk.data.tarifa !== undefined ? parseInt(chk.data.tarifa) : 1;
   // 2. Cargar productos y precios especiales
@@ -1420,6 +1427,7 @@ window.addEventListener('resize',function(){
   <div class="cart-items" id="cart-items"><p class="cart-vacio">El carrito est&#225; vac&#237;o</p></div>
   <div class="cart-foot">
     <div class="cart-servicio" id="cart-servicio" style="display:none"></div>
+    <div class="cart-dto" id="cart-dto" style="display:none"></div>
     <div class="cart-total" style="margin-bottom:16px"><strong>Total Iva incluído:</strong><span class="cart-total-val" id="cart-total-impuestos" style="font-size:18px">0,00 &#8364;</span></div>
     <button class="cart-btn-pedido" id="btn-seguir-comprando" onclick="cerrarCarrito()" style="background:#fff;color:#0d0190;border:2px solid #0d0190;margin-bottom:8px;padding:9px 14px">Seguir Comprando</button>
     <button class="cart-btn-pedido" id="btn-confirmar-pedido" onclick="enviarPedido()">&#10003; Confirmar Pedido</button>
@@ -1711,17 +1719,22 @@ function _renderCarrito(){
   var IVA = {1: 0.21, 2: 0.10, 3: 0.04};
   var REC = {1: 0.052, 2: 0.014, 3: 0.005};
 
-  var total=0; var totalImp=0; var html='';
+  var total=0; var totalImp=0; var html=''; var baseDto=0; var hayPromo=false;
   var _reg=_regalosPorLinea(keys);
   keys.forEach(function(key){
     var item=_carrito[key];var p=item.p;var modo=item.modo||'caja';var pr=_precioNum(p,modo);var sub=_subtotal(p,item.qty,modo);
     total+=sub;
-    // Calcular IVA y recargo según grupo del artículo y tipo del cliente
+    // Descuento fijo del cliente: en todas las lineas menos las de promocion (igual que en el albaran del ERP)
+    var esPromoL = _lineaEsPromo(p,modo); if(esPromoL) hayPromo=true;
+    var conDto = _dtoCliente>0 && !esPromoL;
+    if(conDto) baseDto += sub;
+    var neto = conDto ? sub*(1-_dtoCliente/100) : sub;
+    // Calcular IVA y recargo según grupo del artículo y tipo del cliente (sobre el importe ya descontado)
     var grupo=p.grupo_iva||1;
     var tipoIva=_tipoIva||'I';
     var pct_iva = IVA[grupo]||0.21;
     var pct_rec = (tipoIva==='R') ? (REC[grupo]||0) : 0;
-    totalImp += sub * (1 + pct_iva + pct_rec);
+    totalImp += neto * (1 + pct_iva + pct_rec);
 
     var img=(p.imgs&&p.imgs.length)?'<img class="cart-item-img" src="'+p.imgs[0]+'" alt="" onerror="this.style.display=\'none\'">':'<div class="cart-item-img"></div>';
     var estim=_esEstimado(p)?'≈ ':'';
@@ -1741,8 +1754,24 @@ function _renderCarrito(){
   _estadoPromos().avisos.forEach(function(a){ html+='<p class="cart-aviso-promo">&#127991; '+esc(a)+'</p>'; });
   el.innerHTML=html;
   var sufijo = '';
-  document.getElementById('cart-total-impuestos').textContent=(_tipoIva==='E'?total:totalImp).toFixed(2).replace('.',',')+' €'+sufijo;
+  var impDto = baseDto*_dtoCliente/100;
+  var elDto = document.getElementById('cart-dto');
+  if(elDto){
+    if(impDto>0.004){
+      elDto.style.display='flex';
+      elDto.innerHTML='<span>Descuento cliente '+_fmtPct(_dtoCliente)+' %'+
+        (hayPromo?'<small style="display:block;font-weight:500;color:#6b6b78">No se aplica a los productos en promoci&oacute;n</small>':'')+
+        '</span><span>&minus;'+impDto.toFixed(2).replace('.',',')+' &euro;</span>';
+    } else elDto.style.display='none';
+  }
+  document.getElementById('cart-total-impuestos').textContent=(_tipoIva==='E'?(total-impDto):totalImp).toFixed(2).replace('.',',')+' €'+sufijo;
 }
+
+function _lineaEsPromo(p,modo){
+  if(_precioAdminDe(p,modo)!=null) return false;   // precio puesto a mano: se trata como linea normal
+  return !!_promoAplicada(p,modo);
+}
+function _fmtPct(v){ return (v%1 ? v.toFixed(2) : String(v)).replace('.',','); }
 
 function vaciarCarrito(){
   _carrito={};_csave();_cbadge();_renderCarrito();_cardSyncAll();
@@ -1781,6 +1810,11 @@ async function enviarPedido(){
   });
   _regP.sueltos.forEach(function(g){ lineas.push(_lineaPedidoRegalo(g)); });
 
+  // Descuento fijo del cliente (no se aplica a las lineas de promocion)
+  var baseDtoP=0;
+  keys.forEach(function(key){ var it=_carrito[key]; var m=it.modo||'caja';
+    if(_dtoCliente>0 && !_lineaEsPromo(it.p,m)) baseDtoP += _subtotal(it.p,it.qty,m); });
+  var impDtoP = Math.round(baseDtoP*_dtoCliente)/100;
   var totalStr=total.toFixed(2).replace('.',',');
 
   try {
@@ -1820,7 +1854,10 @@ async function enviarPedido(){
           cliente_codigo: _clienteCod||'',
           tipo_iva: _tipoIva,
           lineas: lineas,
-          total: totalStr,
+          total: totalStr,                                   // suma de lineas SIN descuento (como hasta ahora)
+          descuento_pct: _dtoCliente,                        // % descuento fijo del cliente (0 si no tiene)
+          descuento_importe: impDtoP.toFixed(2).replace('.',','),
+          total_con_descuento: (total-impDtoP).toFixed(2).replace('.',','),
           fecha_servicio: fechaServicio || '',
           fecha_servicio_texto: fechaServicio ? _textoFecha(fechaServicio) : '',
           creado_por: _adminCli ? _adminEmail : ''
