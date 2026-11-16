@@ -185,13 +185,25 @@ function n1(v){v=Number(v||0);return (Math.abs(v-Math.round(v))<0.05)?String(Mat
 function fecha(f){if(!f) return '';var p=String(f).slice(0,10).split('-');return p[2]+'/'+p[1]+'/'+p[0];}
 var DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 function fechaLarga(f){if(!f) return '';var d=new Date(String(f).slice(0,10)+'T12:00:00');return DIAS[d.getDay()]+' '+fecha(f);}
-function tipoChip(t){return t==='FRIO'?'<span class="chip frio">FRÍO</span>':'<span class="chip seco">SECO</span>';}
+function tipoChip(t){
+  if(t==='FRIO') return '<span class="chip frio">FRÍO</span>';
+  if(t==='SECO') return '<span class="chip seco">SECO</span>';
+  return '<span class="chip">'+esc(t)+'</span>';
+}
+function esUVE(p){return !p.canal || p.canal==='UVE';}
+function tamPalet(l){var m=/palet (\d+)/i.exec(l.unidad||'');return m?Number(m[1]):0;}
+function textoPalets(l){
+  var t=tamPalet(l), c=Number(l.cantidad||0);
+  if(!t||!c) return '';
+  var n=c/t; n=Math.round(n*10)/10;
+  return n+' palet'+(n===1?'':'s');
+}
 function estadoChip(e){
   if(e==='pendiente') return '<span class="chip pend">Pendiente</span>';
   if(e==='confirmado') return '<span class="chip ok">Confirmado</span>';
   return '<span class="chip no">Cancelado</span>';
 }
-function esPalet(l){return Number(l.cajas_por_unidad||1)>1 || /palet/i.test(l.unidad||'');}
+function esPalet(l){return esUVE(PEDIDO||{}) && (Number(l.cajas_por_unidad||1)>1 || /palet/i.test(l.unidad||''));}
 function cont(html){document.getElementById('contenido').innerHTML=html;}
 function barra(on){document.getElementById('barra').style.display=on?'block':'none';}
 
@@ -228,7 +240,7 @@ async function verLista(){
                       : '<p class="vacio">No hay pedidos pendientes. Se crean solos cuando el PC calcula el pedido (frío los lunes, seco los miércoles).</p>';
   html += '</div><div class="tarjeta"><h3>Últimos pedidos</h3>';
   html += hist.length ? hist.map(function(p){
-            return fila(p, p.estado==='confirmado'?'<button class="btn-sec" type="button" onclick="abrirPedido('+p.id+')">Ver hoja para UVE</button>':'');
+            return fila(p, p.estado==='confirmado'?'<button class="btn-sec" type="button" onclick="abrirPedido('+p.id+')">Ver hoja del pedido</button>':'');
           }).join('') : '<p class="vacio">Todavía no hay pedidos.</p>';
   html += '</div>';
   cont(html);
@@ -252,11 +264,11 @@ function pintarEditor(){
     '<div class="cab-ped"><div>'+
       '<h2>'+tipoChip(p.tipo)+esc(p.nombre_proveedor||p.proveedor)+'</h2>'+
       '<div class="sub">Calculado el <b>'+fecha(p.fecha_calculo)+'</b> · entrega prevista <b>'+fechaLarga(p.fecha_entrega)+'</b> · pedido n.º '+p.id+'</div>'+
-      '<div class="sub">Stock, venta 3 semanas y encargos en cajas. Pedido teórico = venta 3 semanas − stock + encargos.</div>'+
+      '<div class="sub">Stock, venta y encargos en cajas. '+(esUVE(p)?'Pedido teórico = venta 3 semanas − stock + encargos.':'Pedido teórico = venta del periodo de referencia − stock + encargos de 1 semana.')+'</div>'+
     '</div></div>'+
     '<div class="filtro"><label><input type="checkbox" id="chk-solo" '+(SOLO_PEDIR?'checked':'')+' onchange="SOLO_PEDIR=this.checked;pintarFilas()"> Mostrar solo lo que hay que pedir</label></div>'+
     '<table class="tabla"><thead><tr>'+
-      '<th class="izq">Cód.</th><th class="izq">Descripción</th><th>Stock</th><th>Vta 3s</th><th>Encarg.</th><th>Teórico</th><th class="izq">Pedir</th><th class="izq">Unidad</th>'+
+      '<th class="izq">Cód.</th><th class="izq">Descripción</th><th>Stock</th><th>Venta</th><th>Encarg.</th><th>Teórico</th><th class="izq">Pedir</th><th class="izq">Unidad</th>'+
     '</tr></thead><tbody id="filas"></tbody></table></div>';
   cont(html);
   pintarFilas();
@@ -272,10 +284,10 @@ function pintarFilas(){
     return '<tr id="f'+i+'" class="'+(cant>0?'pedir':'cero')+'">'+
       '<td class="izq c-cod"><span class="cod">'+esc(l.codigo)+'</span></td>'+
       '<td class="izq c-desc"><span class="cod cod-m">'+esc(l.codigo)+' </span><span class="desc">'+esc(l.descripcion)+'</span>'+
-        (l.codigo_uve?' <span class="teo">· UVE '+esc(l.codigo_uve)+'</span>':' <span class="teo cambiado">· SIN CÓDIGO UVE</span>')+
+        (esUVE(PEDIDO)?(l.codigo_uve?' <span class="teo">· UVE '+esc(l.codigo_uve)+'</span>':' <span class="teo cambiado">· SIN CÓDIGO UVE</span>'):'')+
         (l.avisos?'<div class="aviso">&#9888; '+esc(l.avisos)+'</div>':'')+'</td>'+
       '<td class="c-num" data-l="Stock">'+n1(l.stock_cj)+'</td>'+
-      '<td class="c-num" data-l="Vta 3s">'+n1(l.venta3_cj)+'</td>'+
+      '<td class="c-num" data-l="Venta">'+n1(l.venta3_cj)+'</td>'+
       '<td class="c-num" data-l="Encarg.">'+n1(l.encargos_cj)+'</td>'+
       '<td class="c-num" data-l="Teórico"><span class="teo'+(cambiado?' cambiado':'')+'" id="t'+i+'">'+esc(l.teorico)+'</span></td>'+
       '<td class="izq c-ctrl"><span class="ctrl">'+
@@ -283,7 +295,8 @@ function pintarFilas(){
         '<input type="number" inputmode="numeric" min="0" step="'+lote+'" id="c'+i+'" value="'+cant+'" onchange="escribir('+i+',this.value)" onfocus="this.select()">'+
         '<button type="button" onclick="sumar('+i+',1)" aria-label="Más">+</button></span>'+
         (lote>1?'<div class="lote">de '+lote+' en '+lote+'</div>':'')+'</td>'+
-      '<td class="izq c-uni"><span class="uni'+(esPalet(l)?' palet':'')+'">'+esc(l.unidad||'Cajas')+'</span></td>'+
+      '<td class="izq c-uni"><span class="uni'+(esPalet(l)?' palet':'')+'">'+esc(l.unidad||'Cajas')+'</span>'+
+        (tamPalet(l)&&!esUVE(PEDIDO)?'<div class="lote" id="pal'+i+'">'+textoPalets(l)+'</div>':'')+'</td>'+
     '</tr>';
   }).join('');
   document.getElementById('filas').innerHTML = html || '<tr><td class="izq vacio" colspan="8">No hay nada que pedir.</td></tr>';
@@ -296,6 +309,7 @@ function actualizarFila(i){
   var lote = Number(l.lote||1);
   inp.classList.toggle('mal', lote>1 && cant % lote !== 0);
   document.getElementById('t'+i).classList.toggle('cambiado', cant !== Number(l.teorico||0));
+  var pal = document.getElementById('pal'+i); if(pal) pal.textContent = textoPalets(l);
 }
 function sumar(i, signo){
   var l = LINEAS[i], lote = Number(l.lote||1), cant = Number(l.cantidad||0);
@@ -313,8 +327,8 @@ function totalCajas(){
 function recalcular(){
   var t = totalCajas(), min = Number(PEDIDO.minimo_cajas||0);
   document.getElementById('tot-cajas').textContent = t;
-  document.getElementById('tot-minimo').textContent = (t>0 && t<min) ? 'Pascual exige un mínimo de '+min+' cajas' : '';
-  var sinUve = LINEAS.filter(function(l){return Number(l.cantidad||0)>0 && !l.codigo_uve;}).length;
+  document.getElementById('tot-minimo').textContent = (t>0 && t<min) ? 'El proveedor exige un mínimo de '+min+' cajas' : '';
+  var sinUve = esUVE(PEDIDO) ? LINEAS.filter(function(l){return Number(l.cantidad||0)>0 && !l.codigo_uve;}).length : 0;
   if(sinUve) document.getElementById('tot-minimo').textContent += (document.getElementById('tot-minimo').textContent?' · ':'')+sinUve+' artículo(s) sin código UVE';
 }
 
@@ -322,7 +336,7 @@ function recalcular(){
 async function confirmarPedido(){
   var t = totalCajas(), min = Number(PEDIDO.minimo_cajas||0);
   var malLote = LINEAS.filter(function(l){var lo=Number(l.lote||1);return lo>1 && Number(l.cantidad||0)%lo!==0;});
-  var texto = 'Confirmar el pedido '+(PEDIDO.tipo==='FRIO'?'de FRÍO':'de SECO')+' con '+t+' cajas?';
+  var texto = '¿Confirmar el pedido de '+(PEDIDO.tipo==='FRIO'?'FRÍO':PEDIDO.tipo)+' de '+(PEDIDO.nombre_proveedor||'')+' con '+t+' cajas?';
   if(t>0 && t<min) texto += '\n\nOJO: no llega al mínimo de '+min+' cajas.';
   if(malLote.length) texto += '\n\nOJO: '+malLote.length+' artículo(s) no van en su múltiplo.';
   if(t===0) texto = 'El pedido está a 0. ¿Confirmarlo igualmente (no se pedirá nada)?';
@@ -351,6 +365,7 @@ function pintarHoja(recien){
   var lin = LINEAS.filter(function(l){return Number(l.cantidad||0)>0;});
   var hayPalet = lin.some(esPalet);
   var total = lin.reduce(function(s,l){return s+Number(l.cantidad||0)*Number(l.cajas_por_unidad||1);},0);
+  if(!esUVE(p)){ cont(hojaWhatsApp(p, lin, total, recien)); return; }
   var html = '<div class="tarjeta">'+
     (recien?'<div class="ok-box">&#10004; Pedido confirmado. El PC lo imprimirá en la oficina.</div>':'')+
     '<div class="cab-ped"><div>'+
@@ -374,6 +389,40 @@ function pintarHoja(recien){
     '<div style="margin-top:18px"><button class="btn-sec" type="button" onclick="verLista()">&#8592; Volver a pedidos</button></div>'+
   '</div>';
   cont(html);
+}
+
+// ---------------- hoja para proveedores por WhatsApp (Huevos Leon) ----------------
+function textoWhatsApp(p, lin, total){
+  var t = 'Pedido de HUEVOS MATEOS ('+(p.tipo||'')+') para el '+fechaLarga(p.fecha_entrega)+':\n';
+  lin.forEach(function(l){
+    var pal = textoPalets(l);
+    t += '- '+l.codigo+' '+l.descripcion+': '+l.cantidad+' cajas'+(pal?' ('+pal+')':'')+'\n';
+  });
+  t += 'Total: '+total+' cajas.';
+  return t;
+}
+function hojaWhatsApp(p, lin, total, recien){
+  var txt = textoWhatsApp(p, lin, total);
+  var tel = String(p.whatsapp||'').replace(/\D/g,'');
+  var url = 'https://wa.me/'+tel+'?text='+encodeURIComponent(txt);
+  return '<div class="tarjeta">'+
+    (recien?'<div class="ok-box">&#10004; Pedido confirmado. El PC lo imprimirá en la oficina.</div>':'')+
+    '<div class="cab-ped"><div>'+
+      '<h2>Hoja del pedido · '+tipoChip(p.tipo)+esc(p.nombre_proveedor||p.proveedor)+'</h2>'+
+      '<div class="sub">Pedido n.º '+p.id+' · calculado el '+fecha(p.fecha_calculo)+' · entrega prevista '+fechaLarga(p.fecha_entrega)+' · '+estadoChip(p.estado)+'</div>'+
+    '</div></div>'+
+    (lin.length && tel ? '<p style="margin:14px 0"><a class="btn-pri" style="display:inline-block;background:#25D366" href="'+url+'" target="_blank" rel="noopener">&#128172; Enviar por WhatsApp</a>'+
+      ' <span class="teo">Se abre WhatsApp con el pedido escrito; revísalo y pulsa enviar.</span></p>' : '')+
+    (lin.length ? '<table class="hoja"><thead><tr><th>Código</th><th>Descripción</th><th style="text-align:right">Cajas</th><th>Palets</th></tr></thead><tbody>'+
+      lin.map(function(l){
+        return '<tr><td class="uve">'+esc(l.codigo)+'</td><td>'+esc(l.descripcion)+
+          (Number(l.cantidad)!==Number(l.teorico)?' <span class="teo cambiado">(teórico '+esc(l.teorico)+')</span>':'')+'</td>'+
+          '<td class="can">'+esc(l.cantidad)+'</td><td class="uni">'+esc(textoPalets(l))+'</td></tr>';
+      }).join('')+'</tbody></table>'+
+      '<p style="text-align:right;font-size:16px;margin:14px 4px 0">Total: <b style="font-size:22px;color:var(--azul)">'+total+'</b> cajas</p>'
+    : '<p class="vacio">Este pedido no tiene nada que pedir.</p>')+
+    '<div style="margin-top:18px"><button class="btn-sec" type="button" onclick="verLista()">&#8592; Volver a pedidos</button></div>'+
+  '</div>';
 }
 </script>
 </body>
