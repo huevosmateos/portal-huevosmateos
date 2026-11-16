@@ -264,7 +264,7 @@ function pintarEditor(){
     '<div class="cab-ped"><div>'+
       '<h2>'+tipoChip(p.tipo)+esc(p.nombre_proveedor||p.proveedor)+'</h2>'+
       '<div class="sub">Calculado el <b>'+fecha(p.fecha_calculo)+'</b> · entrega prevista <b>'+fechaLarga(p.fecha_entrega)+'</b> · pedido n.º '+p.id+'</div>'+
-      '<div class="sub">Stock, venta y encargos en cajas. '+(esUVE(p)?'Pedido teórico = venta 3 semanas − stock + encargos.':'Pedido teórico = venta del periodo de referencia − stock + encargos de 1 semana.')+'</div>'+
+      '<div class="sub">Stock, venta y encargos en cajas. '+(esUVE(p)?'Pedido teórico = venta 3 semanas − stock + encargos.':'Pedido teórico = venta del periodo de referencia − stock + encargos de 1 semana + venta hasta la llegada.')+'</div>'+
     '</div></div>'+
     '<div class="filtro"><label><input type="checkbox" id="chk-solo" '+(SOLO_PEDIR?'checked':'')+' onchange="SOLO_PEDIR=this.checked;pintarFilas()"> Mostrar solo lo que hay que pedir</label></div>'+
     '<table class="tabla"><thead><tr>'+
