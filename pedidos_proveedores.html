@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Pedidos a proveedores - Huevos Mateos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#0d0190;--azul2:#1b16c9;--yema:#f5b301;--txt:#1d1d27;--gris:#6b6b78;--linea:#e7e7ef;--bg:#fafafb;--ok:#1a7a4a;--err:#b91c1c;--pedir:#fff6d6;--rojo:#c00000}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Manrope',system-ui,sans-serif;color:var(--txt);background:var(--bg);line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;line-height:1.15;margin:0 0 .4em}
+a{color:inherit;text-decoration:none}
+.top{background:#fff;border-bottom:1px solid var(--linea)}
+.top-inner{max-width:1180px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-img{height:70px;width:auto}
+.badge-admin{background:var(--azul);color:#fff;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:20px}
+.user-box{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--gris)}
+.user-box b{color:var(--azul)}
+.nav{background:var(--azul);height:6px}
+main{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:30px 20px 120px}
+.panel-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid var(--yema)}
+.panel-head h1{font-size:30px;color:var(--azul);margin:0}
+.panel-head p{margin:0;color:var(--gris);font-size:14px}
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.tab{background:#fff;border:1px solid var(--linea);color:var(--gris);padding:9px 18px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.tab.activo{background:var(--azul);border-color:var(--azul);color:#fff}
+.tarjeta{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:22px 24px;margin-bottom:16px}
+.vacio{color:var(--gris);font-size:14px}
+.btn-pri{background:var(--azul);color:#fff;border:none;padding:12px 22px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-pri:hover{background:var(--azul2)}
+.btn-pri:disabled{opacity:.5;cursor:not-allowed}
+.btn-sec{background:#fff;color:var(--azul);border:2px solid var(--azul);padding:10px 18px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-sec:hover{background:#eef0ff}
+.btn-peligro{background:#fff;color:var(--err);border:2px solid var(--err);padding:10px 18px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.chip{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:#eef0ff;color:var(--azul);margin-right:6px}
+.chip.frio{background:#e3f1ff;color:#0b5cad}
+.chip.seco{background:#fff1d6;color:#8a5a00}
+.chip.pend{background:#fff1c2;color:#7a5b00}
+.chip.ok{background:#e6f9f0;color:var(--ok)}
+.chip.no{background:#f1f1f4;color:var(--gris)}
+
+/* LISTA DE PEDIDOS */
+.ped{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid var(--linea)}
+.ped:last-child{border-bottom:none}
+.ped-tit{font-weight:700;font-size:16px}
+.ped-sub{font-size:13px;color:var(--gris)}
+
+/* EDITOR */
+.cab-ped{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.cab-ped h2{color:var(--azul);font-size:24px;margin:0 0 4px}
+.cab-ped .sub{color:var(--gris);font-size:14px}
+.filtro{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:14px 0 4px;font-size:14px;color:var(--gris)}
+.filtro label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.tabla{width:100%;border-collapse:collapse;font-size:14px}
+.tabla th{text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--gris);padding:8px 8px;border-bottom:2px solid var(--linea);white-space:nowrap;background:#fff;position:sticky;top:0}
+.tabla th.izq,.tabla td.izq{text-align:left}
+.tabla td{padding:9px 8px;border-bottom:1px solid var(--linea);text-align:right;vertical-align:middle}
+.tabla tr.pedir td{background:var(--pedir)}
+.tabla tr.cero td{color:#8a8a96}
+.cod{font-weight:700;color:var(--azul)}
+.cod-m{display:none}
+.desc{font-weight:700;color:var(--txt)}
+.aviso{font-size:12px;color:#8a5a00;font-weight:500;margin-top:2px}
+.teo{font-size:12px;color:var(--gris)}
+.teo.cambiado{color:var(--err);font-weight:700}
+.ctrl{display:inline-flex;align-items:center;border:1px solid var(--linea);border-radius:8px;overflow:hidden;background:#fff}
+.ctrl button{width:36px;height:36px;border:none;background:#f3f3f8;font-size:20px;font-weight:700;color:var(--azul);cursor:pointer}
+.ctrl button:active{background:#e1e2f5}
+.ctrl input{width:58px;height:36px;border:none;text-align:center;font-size:17px;font-weight:700;font-family:inherit}
+.ctrl input:focus{outline:2px solid var(--azul)}
+.ctrl input.mal{background:#fdecea;color:var(--err)}
+.uni{font-weight:700;white-space:nowrap}
+.uni.palet{color:var(--rojo)}
+.lote{font-size:11px;color:var(--gris)}
+
+/* BARRA INFERIOR */
+.barra{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:2px solid var(--yema);box-shadow:0 -6px 24px rgba(0,0,0,.06);display:none}
+.barra-in{max-width:1180px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.total{font-size:15px}
+.total b{font-size:24px;color:var(--azul)}
+.minimo{font-size:13px;font-weight:700;color:var(--err)}
+.barra-acc{display:flex;gap:10px;flex-wrap:wrap}
+
+/* HOJA UVE */
+.hoja{width:100%;border-collapse:collapse}
+.hoja th{text-align:left;font-size:12px;text-transform:uppercase;color:var(--gris);padding:8px;border-bottom:2px solid var(--linea)}
+.hoja td{padding:12px 8px;border-bottom:1px solid var(--linea);font-size:15px}
+.hoja .uve{font-size:20px;font-weight:700;letter-spacing:.03em;font-variant-numeric:tabular-nums;user-select:all}
+.hoja .can{font-size:22px;font-weight:700;text-align:right}
+.hoja tr.palet .can,.hoja tr.palet .uni{color:var(--rojo)}
+.nota-palet{background:#fdecea;color:var(--rojo);border-radius:8px;padding:10px 14px;font-weight:700;font-size:14px;margin-bottom:14px}
+.ok-box{background:#e6f9f0;color:var(--ok);border-radius:8px;padding:12px 14px;font-weight:700;margin-bottom:14px}
+
+#vista-cargando{text-align:center;color:var(--gris);padding-top:60px}
+.pie{background:var(--azul);color:#cfcffb;text-align:center;font-size:13px;padding:16px}
+
+@media(max-width:760px){
+  .logo-img{height:48px}
+  .top-inner{flex-wrap:wrap;padding:10px 14px}
+  main{padding:20px 10px 150px}
+  .panel-head h1{font-size:23px}
+  .tarjeta{padding:16px 12px}
+  /* la tabla pasa a tarjetas */
+  .tabla thead{display:none}
+  .tabla tr{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 8px;border-bottom:1px solid var(--linea)}
+  .tabla td{border:none;padding:0;text-align:left;background:none!important}
+  .tabla tr.pedir{background:var(--pedir)}
+  .tabla td.c-desc{grid-column:1/3}
+  .tabla td.c-cod{display:none}
+  .cod-m{display:inline}
+  .tabla td.c-num{font-size:13px;color:var(--gris)}
+  .tabla td.c-num:before{content:attr(data-l) ": ";font-weight:700}
+  .tabla td.c-ctrl{grid-column:1/2;grid-row:auto;margin-top:6px}
+  .tabla td.c-uni{align-self:end;margin-bottom:8px}
+  .barra-in{padding:10px 12px}
+  .barra-acc{width:100%}
+  .barra-acc button{flex:1}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<header class="top"><div class="top-inner">
+  <div class="logo">
+    <a href="admin.html"><img src="assets/logo.bmp" alt="Huevos Mateos" class="logo-img"></a>
+    <span class="badge-admin">Administración</span>
+  </div>
+  <div class="user-box"><span>Conectado como <b id="user-email"></b></span></div>
+</div></header>
+<div class="nav"></div>
+
+<main>
+  <section id="vista-cargando">Comprobando sesión...</section>
+
+  <section id="vista-panel" style="display:none">
+    <div class="panel-head">
+      <div>
+        <h1>Pedidos a proveedores</h1>
+        <p>Revisa el pedido teórico, corrige las cantidades y confírmalo.</p>
+      </div>
+    </div>
+    <div class="tabs">
+      <a class="tab" href="admin.html">&#128100; Pedidos en nombre de cliente</a>
+      <button class="tab activo" type="button" onclick="verLista()">&#128230; Pedidos a proveedores</button>
+    </div>
+    <div id="contenido"></div>
+  </section>
+</main>
+
+<div class="barra" id="barra"><div class="barra-in">
+  <div>
+    <div class="total">Total: <b id="tot-cajas">0</b> cajas</div>
+    <div class="minimo" id="tot-minimo"></div>
+  </div>
+  <div class="barra-acc">
+    <button class="btn-sec" type="button" onclick="verLista()">&#8592; Volver</button>
+    <button class="btn-peligro" type="button" onclick="cancelarPedido()">Cancelar pedido</button>
+    <button class="btn-pri" type="button" id="btn-confirmar" onclick="confirmarPedido()">Confirmar pedido</button>
+  </div>
+</div></div>
+
+<div class="pie">© 2026 · Huevos Mateos, S.L. · Panel interno</div>
+
+<script>
+// === SUPABASE (mismo proyecto y misma sesion de admin que admin.html) ===
+const SUPABASE_URL = 'https://pkwttturncewwdlpxrxz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3R0dHVybmNld3dkbHB4cnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTQ1OTEsImV4cCI6MjA5NTczMDU5MX0.aFKZbuO-0zO--SckT-FnjkGdOAV5nBWeEoLgMcV80VY';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { storageKey: 'hm-admin-auth', persistSession: true, autoRefreshToken: true }
+});
+
+var PEDIDO = null;   // pedido abierto
+var LINEAS = [];     // sus lineas
+var SOLO_PEDIR = false;
+
+// ---------------- utilidades ----------------
+function esc(s){var d=document.createElement('div');d.textContent=(s==null?'':String(s));return d.innerHTML;}
+function n1(v){v=Number(v||0);return (Math.abs(v-Math.round(v))<0.05)?String(Math.round(v)):v.toFixed(1).replace('.',',');}
+function fecha(f){if(!f) return '';var p=String(f).slice(0,10).split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+var DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+function fechaLarga(f){if(!f) return '';var d=new Date(String(f).slice(0,10)+'T12:00:00');return DIAS[d.getDay()]+' '+fecha(f);}
+function tipoChip(t){return t==='FRIO'?'<span class="chip frio">FRÍO</span>':'<span class="chip seco">SECO</span>';}
+function estadoChip(e){
+  if(e==='pendiente') return '<span class="chip pend">Pendiente</span>';
+  if(e==='confirmado') return '<span class="chip ok">Confirmado</span>';
+  return '<span class="chip no">Cancelado</span>';
+}
+function esPalet(l){return Number(l.cajas_por_unidad||1)>1 || /palet/i.test(l.unidad||'');}
+function cont(html){document.getElementById('contenido').innerHTML=html;}
+function barra(on){document.getElementById('barra').style.display=on?'block':'none';}
+
+// ---------------- arranque ----------------
+(async function(){
+  var r = await sb.auth.getSession();
+  var s = r.data && r.data.session;
+  if(!s || !s.user){ location.replace('admin.html'); return; }
+  var adm = await sb.rpc('es_admin');
+  if(adm.error || adm.data !== true){ location.replace('admin.html'); return; }
+  document.getElementById('user-email').textContent = s.user.email || '';
+  document.getElementById('vista-cargando').style.display='none';
+  document.getElementById('vista-panel').style.display='block';
+  verLista();
+})();
+
+// ---------------- lista de pedidos ----------------
+async function verLista(){
+  barra(false); PEDIDO=null; LINEAS=[];
+  cont('<div class="tarjeta"><p class="vacio">Cargando pedidos...</p></div>');
+  var r = await sb.from('pedidos_proveedor').select('*').order('id',{ascending:false}).limit(30);
+  if(r.error){ cont('<div class="tarjeta"><p class="vacio">Error: '+esc(r.error.message)+'</p></div>'); return; }
+  var pend = r.data.filter(function(p){return p.estado==='pendiente';});
+  var hist = r.data.filter(function(p){return p.estado!=='pendiente';}).slice(0,15);
+  var fila = function(p, boton){
+    return '<div class="ped"><div>'+
+      '<div class="ped-tit">'+tipoChip(p.tipo)+esc(p.nombre_proveedor||p.proveedor)+'</div>'+
+      '<div class="ped-sub">Calculado el '+fecha(p.fecha_calculo)+' · entrega prevista '+fechaLarga(p.fecha_entrega)+
+      ' · n.º '+p.id+' '+estadoChip(p.estado)+(p.estado==='confirmado'?(p.impreso?' <span class="chip no">Impreso</span>':' <span class="chip pend">Sin imprimir</span>'):'')+'</div>'+
+      '</div>'+boton+'</div>';
+  };
+  var html = '<div class="tarjeta"><h3>Pendientes de confirmar</h3>';
+  html += pend.length ? pend.map(function(p){return fila(p,'<button class="btn-pri" type="button" onclick="abrirPedido('+p.id+')">Revisar pedido</button>');}).join('')
+                      : '<p class="vacio">No hay pedidos pendientes. Se crean solos cuando el PC calcula el pedido (frío los lunes, seco los miércoles).</p>';
+  html += '</div><div class="tarjeta"><h3>Últimos pedidos</h3>';
+  html += hist.length ? hist.map(function(p){
+            return fila(p, p.estado==='confirmado'?'<button class="btn-sec" type="button" onclick="abrirPedido('+p.id+')">Ver hoja para UVE</button>':'');
+          }).join('') : '<p class="vacio">Todavía no hay pedidos.</p>';
+  html += '</div>';
+  cont(html);
+}
+
+// ---------------- abrir pedido ----------------
+async function abrirPedido(id){
+  cont('<div class="tarjeta"><p class="vacio">Cargando pedido...</p></div>');
+  var a = await sb.from('pedidos_proveedor').select('*').eq('id',id).single();
+  var b = await sb.from('pedidos_proveedor_lineas').select('*').eq('pedido_id',id).order('orden');
+  if(a.error||b.error){ cont('<div class="tarjeta"><p class="vacio">Error al cargar el pedido.</p></div>'); return; }
+  PEDIDO = a.data; LINEAS = b.data || [];
+  if(PEDIDO.estado==='pendiente') pintarEditor(); else pintarHoja();
+  window.scrollTo({top:0});
+}
+
+// ---------------- editor ----------------
+function pintarEditor(){
+  var p = PEDIDO;
+  var html = '<div class="tarjeta">'+
+    '<div class="cab-ped"><div>'+
+      '<h2>'+tipoChip(p.tipo)+esc(p.nombre_proveedor||p.proveedor)+'</h2>'+
+      '<div class="sub">Calculado el <b>'+fecha(p.fecha_calculo)+'</b> · entrega prevista <b>'+fechaLarga(p.fecha_entrega)+'</b> · pedido n.º '+p.id+'</div>'+
+      '<div class="sub">Stock, venta 3 semanas y encargos en cajas. Pedido teórico = venta 3 semanas − stock + encargos.</div>'+
+    '</div></div>'+
+    '<div class="filtro"><label><input type="checkbox" id="chk-solo" '+(SOLO_PEDIR?'checked':'')+' onchange="SOLO_PEDIR=this.checked;pintarFilas()"> Mostrar solo lo que hay que pedir</label></div>'+
+    '<table class="tabla"><thead><tr>'+
+      '<th class="izq">Cód.</th><th class="izq">Descripción</th><th>Stock</th><th>Vta 3s</th><th>Encarg.</th><th>Teórico</th><th class="izq">Pedir</th><th class="izq">Unidad</th>'+
+    '</tr></thead><tbody id="filas"></tbody></table></div>';
+  cont(html);
+  pintarFilas();
+  barra(true);
+  recalcular();
+}
+function pintarFilas(){
+  var html = LINEAS.map(function(l, i){
+    var cant = Number(l.cantidad||0);
+    if(SOLO_PEDIR && cant<=0 && Number(l.teorico||0)<=0) return '';
+    var cambiado = cant !== Number(l.teorico||0);
+    var lote = Number(l.lote||1);
+    return '<tr id="f'+i+'" class="'+(cant>0?'pedir':'cero')+'">'+
+      '<td class="izq c-cod"><span class="cod">'+esc(l.codigo)+'</span></td>'+
+      '<td class="izq c-desc"><span class="cod cod-m">'+esc(l.codigo)+' </span><span class="desc">'+esc(l.descripcion)+'</span>'+
+        (l.codigo_uve?' <span class="teo">· UVE '+esc(l.codigo_uve)+'</span>':' <span class="teo cambiado">· SIN CÓDIGO UVE</span>')+
+        (l.avisos?'<div class="aviso">&#9888; '+esc(l.avisos)+'</div>':'')+'</td>'+
+      '<td class="c-num" data-l="Stock">'+n1(l.stock_cj)+'</td>'+
+      '<td class="c-num" data-l="Vta 3s">'+n1(l.venta3_cj)+'</td>'+
+      '<td class="c-num" data-l="Encarg.">'+n1(l.encargos_cj)+'</td>'+
+      '<td class="c-num" data-l="Teórico"><span class="teo'+(cambiado?' cambiado':'')+'" id="t'+i+'">'+esc(l.teorico)+'</span></td>'+
+      '<td class="izq c-ctrl"><span class="ctrl">'+
+        '<button type="button" onclick="sumar('+i+',-1)" aria-label="Menos">&minus;</button>'+
+        '<input type="number" inputmode="numeric" min="0" step="'+lote+'" id="c'+i+'" value="'+cant+'" onchange="escribir('+i+',this.value)" onfocus="this.select()">'+
+        '<button type="button" onclick="sumar('+i+',1)" aria-label="Más">+</button></span>'+
+        (lote>1?'<div class="lote">de '+lote+' en '+lote+'</div>':'')+'</td>'+
+      '<td class="izq c-uni"><span class="uni'+(esPalet(l)?' palet':'')+'">'+esc(l.unidad||'Cajas')+'</span></td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('filas').innerHTML = html || '<tr><td class="izq vacio" colspan="8">No hay nada que pedir.</td></tr>';
+}
+function actualizarFila(i){
+  var l = LINEAS[i], cant = Number(l.cantidad||0);
+  var fila = document.getElementById('f'+i); if(!fila) return;
+  fila.className = cant>0 ? 'pedir' : 'cero';
+  var inp = document.getElementById('c'+i); inp.value = cant;
+  var lote = Number(l.lote||1);
+  inp.classList.toggle('mal', lote>1 && cant % lote !== 0);
+  document.getElementById('t'+i).classList.toggle('cambiado', cant !== Number(l.teorico||0));
+}
+function sumar(i, signo){
+  var l = LINEAS[i], lote = Number(l.lote||1), cant = Number(l.cantidad||0);
+  if(signo>0) cant = Math.floor(cant/lote)*lote + lote;
+  else cant = Math.max(0, Math.ceil(cant/lote)*lote - lote);
+  l.cantidad = cant; actualizarFila(i); recalcular();
+}
+function escribir(i, v){
+  var n = parseInt(v,10); if(isNaN(n)||n<0) n = 0;
+  LINEAS[i].cantidad = n; actualizarFila(i); recalcular();
+}
+function totalCajas(){
+  return LINEAS.reduce(function(s,l){return s + Number(l.cantidad||0)*Number(l.cajas_por_unidad||1);},0);
+}
+function recalcular(){
+  var t = totalCajas(), min = Number(PEDIDO.minimo_cajas||0);
+  document.getElementById('tot-cajas').textContent = t;
+  document.getElementById('tot-minimo').textContent = (t>0 && t<min) ? 'Pascual exige un mínimo de '+min+' cajas' : '';
+  var sinUve = LINEAS.filter(function(l){return Number(l.cantidad||0)>0 && !l.codigo_uve;}).length;
+  if(sinUve) document.getElementById('tot-minimo').textContent += (document.getElementById('tot-minimo').textContent?' · ':'')+sinUve+' artículo(s) sin código UVE';
+}
+
+// ---------------- confirmar / cancelar ----------------
+async function confirmarPedido(){
+  var t = totalCajas(), min = Number(PEDIDO.minimo_cajas||0);
+  var malLote = LINEAS.filter(function(l){var lo=Number(l.lote||1);return lo>1 && Number(l.cantidad||0)%lo!==0;});
+  var texto = 'Confirmar el pedido '+(PEDIDO.tipo==='FRIO'?'de FRÍO':'de SECO')+' con '+t+' cajas?';
+  if(t>0 && t<min) texto += '\n\nOJO: no llega al mínimo de '+min+' cajas.';
+  if(malLote.length) texto += '\n\nOJO: '+malLote.length+' artículo(s) no van en su múltiplo.';
+  if(t===0) texto = 'El pedido está a 0. ¿Confirmarlo igualmente (no se pedirá nada)?';
+  if(!window.confirm(texto)) return;
+  var btn = document.getElementById('btn-confirmar'); btn.disabled = true; btn.textContent = 'Confirmando...';
+  var cants = {};
+  LINEAS.forEach(function(l){ cants[String(l.id)] = Number(l.cantidad||0); });
+  var r = await sb.rpc('confirmar_pedido_proveedor', { p_id: PEDIDO.id, p_cantidades: cants });
+  btn.disabled = false; btn.textContent = 'Confirmar pedido';
+  if(r.error){ window.alert('No se ha podido confirmar: '+r.error.message); return; }
+  PEDIDO.estado = 'confirmado'; PEDIDO.impreso = false;
+  barra(false);
+  pintarHoja(true);
+  window.scrollTo({top:0});
+}
+async function cancelarPedido(){
+  if(!window.confirm('¿Cancelar este pedido? No se pedirá nada.')) return;
+  var r = await sb.rpc('cancelar_pedido_proveedor', { p_id: PEDIDO.id });
+  if(r.error){ window.alert('No se ha podido cancelar: '+r.error.message); return; }
+  verLista();
+}
+
+// ---------------- hoja para UVE ----------------
+function pintarHoja(recien){
+  var p = PEDIDO;
+  var lin = LINEAS.filter(function(l){return Number(l.cantidad||0)>0;});
+  var hayPalet = lin.some(esPalet);
+  var total = lin.reduce(function(s,l){return s+Number(l.cantidad||0)*Number(l.cajas_por_unidad||1);},0);
+  var html = '<div class="tarjeta">'+
+    (recien?'<div class="ok-box">&#10004; Pedido confirmado. El PC lo imprimirá en la oficina.</div>':'')+
+    '<div class="cab-ped"><div>'+
+      '<h2>Hoja para UVE · '+tipoChip(p.tipo)+esc(p.nombre_proveedor||p.proveedor)+'</h2>'+
+      '<div class="sub">Pedido n.º '+p.id+' · calculado el '+fecha(p.fecha_calculo)+' · entrega prevista '+fechaLarga(p.fecha_entrega)+' · '+estadoChip(p.estado)+'</div>'+
+    '</div></div>'+
+    '<p class="sub" style="color:var(--gris);font-size:14px">En UVE: <b>Nuevo pedido</b> → buscar el <b>Cód. UVE</b> → <b>Cantidad</b> → <b>Unidad</b>.</p>'+
+    (hayPalet?'<div class="nota-palet">En rojo: cambiar la unidad a PALET (por defecto sale Cajas y da error).</div>':'')+
+    (lin.length ? '<table class="hoja"><thead><tr><th>Cód. UVE</th><th style="text-align:right">Cantidad</th><th>Unidad</th><th>Descripción</th></tr></thead><tbody>'+
+      lin.map(function(l){
+        return '<tr class="'+(esPalet(l)?'palet':'')+'">'+
+          '<td class="uve">'+(l.codigo_uve?esc(l.codigo_uve):'<span style="color:var(--err)">FALTA</span>')+'</td>'+
+          '<td class="can">'+esc(l.cantidad)+'</td>'+
+          '<td class="uni">'+esc(l.unidad||'Cajas')+'</td>'+
+          '<td><span class="cod">'+esc(l.codigo)+'</span> '+esc(l.descripcion)+
+            (Number(l.cantidad)!==Number(l.teorico)?' <span class="teo cambiado">(teórico '+esc(l.teorico)+')</span>':'')+'</td>'+
+        '</tr>';
+      }).join('')+'</tbody></table>'+
+      '<p style="text-align:right;font-size:16px;margin:14px 4px 0">Total: <b style="font-size:22px;color:var(--azul)">'+total+'</b> cajas</p>'
+    : '<p class="vacio">Este pedido no tiene nada que pedir.</p>')+
+    '<div style="margin-top:18px"><button class="btn-sec" type="button" onclick="verLista()">&#8592; Volver a pedidos</button></div>'+
+  '</div>';
+  cont(html);
+}
+</script>
+</body>
+</html>
