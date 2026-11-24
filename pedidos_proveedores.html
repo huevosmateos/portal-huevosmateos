@@ -396,9 +396,11 @@ function textoWhatsApp(p, lin, total){
   var t = 'Pedido de HUEVOS MATEOS ('+(p.tipo||'')+') para el '+fechaLarga(p.fecha_entrega)+':\n';
   lin.forEach(function(l){
     var pal = textoPalets(l);
-    t += '- '+l.codigo+' '+l.descripcion+': '+l.cantidad+' cajas'+(pal?' ('+pal+')':'')+'\n';
+    var uds = /^unidad/i.test(l.unidad||'');
+    t += '- '+l.codigo+' '+l.descripcion+': '+l.cantidad+(uds?' unidades':' cajas')+(pal?' ('+pal+')':'')+'\n';
   });
-  t += 'Total: '+total+' cajas.';
+  var hayUds = lin.some(function(l){return /^unidad/i.test(l.unidad||'');});
+  if(!hayUds) t += 'Total: '+total+' cajas.';
   return t;
 }
 function hojaWhatsApp(p, lin, total, recien){
