@@ -192,6 +192,10 @@ function tipoChip(t){
 }
 function esUVE(p){return !p.canal || p.canal==='UVE';}
 function tamPalet(l){var m=/palet (\d+)/i.exec(l.unidad||'');return m?Number(m[1]):0;}
+// articulos que se venden por unidades y el proveedor sirve en cajas (Dilacta: "Unidades (de 16 en 16)")
+function udsCaja(l){var m=/^unidad.*de (\d+) en/i.exec(l.unidad||'');return m?Number(m[1]):0;}
+function cajasLinea(l){var u=udsCaja(l), c=Number(l.cantidad||0);
+  return u ? Math.round(c/u*10)/10 : c*Number(l.cajas_por_unidad||1);}
 function textoPalets(l){
   var t=tamPalet(l), c=Number(l.cantidad||0);
   if(!t||!c) return '';
@@ -322,7 +326,7 @@ function escribir(i, v){
   LINEAS[i].cantidad = n; actualizarFila(i); recalcular();
 }
 function totalCajas(){
-  return LINEAS.reduce(function(s,l){return s + Number(l.cantidad||0)*Number(l.cajas_por_unidad||1);},0);
+  return LINEAS.reduce(function(s,l){return s + cajasLinea(l);},0);
 }
 function recalcular(){
   var t = totalCajas(), min = Number(PEDIDO.minimo_cajas||0);
@@ -364,7 +368,7 @@ function pintarHoja(recien){
   var p = PEDIDO;
   var lin = LINEAS.filter(function(l){return Number(l.cantidad||0)>0;});
   var hayPalet = lin.some(esPalet);
-  var total = lin.reduce(function(s,l){return s+Number(l.cantidad||0)*Number(l.cajas_por_unidad||1);},0);
+  var total = lin.reduce(function(s,l){return s+cajasLinea(l);},0);
   if(!esUVE(p)){ cont(hojaWhatsApp(p, lin, total, recien)); return; }
   var html = '<div class="tarjeta">'+
     (recien?'<div class="ok-box">&#10004; Pedido confirmado. El PC lo imprimirá en la oficina.</div>':'')+
@@ -396,11 +400,10 @@ function textoWhatsApp(p, lin, total){
   var t = 'Pedido de HUEVOS MATEOS ('+(p.tipo||'')+') para el '+fechaLarga(p.fecha_entrega)+':\n';
   lin.forEach(function(l){
     var pal = textoPalets(l);
-    var uds = /^unidad/i.test(l.unidad||'');
-    t += '- '+l.codigo+' '+l.descripcion+': '+l.cantidad+(uds?' unidades':' cajas')+(pal?' ('+pal+')':'')+'\n';
+    var u = udsCaja(l);
+    t += '- '+l.codigo+' '+l.descripcion+': '+(u ? cajasLinea(l)+' cajas ('+l.cantidad+' uds)' : l.cantidad+' cajas')+(pal?' ('+pal+')':'')+'\n';
   });
-  var hayUds = lin.some(function(l){return /^unidad/i.test(l.unidad||'');});
-  if(!hayUds) t += 'Total: '+total+' cajas.';
+  t += 'Total: '+total+' cajas.';
   return t;
 }
 function hojaWhatsApp(p, lin, total, recien){
@@ -415,11 +418,11 @@ function hojaWhatsApp(p, lin, total, recien){
     '</div></div>'+
     (lin.length && tel ? '<p style="margin:14px 0"><a class="btn-pri" style="display:inline-block;background:#25D366" href="'+url+'" target="_blank" rel="noopener">&#128172; Enviar por WhatsApp</a>'+
       ' <span class="teo">Se abre WhatsApp con el pedido escrito; revísalo y pulsa enviar.</span></p>' : '')+
-    (lin.length ? '<table class="hoja"><thead><tr><th>Código</th><th>Descripción</th><th style="text-align:right">Cajas</th><th>Palets</th></tr></thead><tbody>'+
+    (lin.length ? '<table class="hoja"><thead><tr><th>Código</th><th>Descripción</th><th style="text-align:right">Cajas</th><th>Palets / uds</th></tr></thead><tbody>'+
       lin.map(function(l){
         return '<tr><td class="uve">'+esc(l.codigo)+'</td><td>'+esc(l.descripcion)+
-          (Number(l.cantidad)!==Number(l.teorico)?' <span class="teo cambiado">(teórico '+esc(l.teorico)+')</span>':'')+'</td>'+
-          '<td class="can">'+esc(l.cantidad)+'</td><td class="uni">'+esc(textoPalets(l))+'</td></tr>';
+          (Number(l.cantidad)!==Number(l.teorico)?' <span class="teo cambiado">(teórico '+esc(l.teorico)+(udsCaja(l)?' uds':'')+')</span>':'')+'</td>'+
+          '<td class="can">'+esc(cajasLinea(l))+'</td><td class="uni">'+esc(udsCaja(l) ? l.cantidad+' uds' : textoPalets(l))+'</td></tr>';
       }).join('')+'</tbody></table>'+
       '<p style="text-align:right;font-size:16px;margin:14px 4px 0">Total: <b style="font-size:22px;color:var(--azul)">'+total+'</b> cajas</p>'
     : '<p class="vacio">Este pedido no tiene nada que pedir.</p>')+
