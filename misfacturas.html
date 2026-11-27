@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d0190">
+<link rel="apple-touch-icon" href="assets/icono-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Huevos Mateos">
+<script>window.HM_PAGINA_PRIVADA = true;</script>
+<script src="instalar.js" defer></script>
+<title>Mis facturas - Huevos Mateos Tienda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#0d0190;--azul2:#1b16c9;--yema:#f5b301;--txt:#1d1d27;--gris:#6b6b78;--linea:#e7e7ef;--bg:#fafafb;--campo:#eef0ff}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Manrope',system-ui,sans-serif;color:var(--txt);background:#f4f4f8;line-height:1.5}
+a{color:inherit;text-decoration:none}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;line-height:1.15;margin:0}
+.top{background:#fff;border-bottom:1px solid var(--linea)}
+.top-inner{max-width:1000px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.top-left{display:flex;align-items:center;gap:18px}
+.logo-img{height:90px;width:auto}
+.top-info{display:flex;flex-direction:column;line-height:1.35}
+.top-info .tel-label{color:var(--gris);font-size:14px}
+.top-info .tel-num{color:var(--azul);font-weight:700;font-size:16px;white-space:nowrap}
+.btn-volver{display:inline-flex;align-items:center;gap:8px;background:var(--azul);color:#fff;border:0;border-radius:9px;padding:11px 18px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap}
+.btn-volver:hover{background:var(--azul2)}
+main{max-width:1000px;margin:0 auto;padding:22px 20px 60px}
+.cab-pag{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.cab-pag h1{font-size:30px;color:var(--azul)}
+.cab-pag .cli{color:var(--gris);font-size:14px}
+.cab-pag .cli b{color:var(--txt)}
+.nota{color:var(--gris);font-size:13px;margin:0 0 18px}
+.admin-banner{background:var(--yema);color:#1d1d27;font-size:14px;font-weight:700;padding:8px 16px;text-align:center}
+
+/* Tarjeta de albaran (inspirada en la ficha del ERP) */
+.alb{background:#fff;border:1px solid var(--linea);border-radius:12px;margin:0 0 18px;overflow:hidden;box-shadow:0 2px 10px rgba(13,1,144,.05)}
+.alb-cab{display:flex;align-items:flex-end;gap:10px 26px;padding:10px 16px;background:var(--azul);color:#fff}
+.dato{display:flex;flex-direction:column;gap:1px;min-width:0}
+.dato label{font-size:10.5px;color:#c9c6ff;text-transform:uppercase;letter-spacing:.04em;font-weight:700;white-space:nowrap}
+.dato > span{display:block;font-weight:700;color:#fff;font-size:16px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dato.total{margin-left:auto;text-align:right}
+.dato label .ct{display:none}
+.btn-repetir{margin-left:auto;align-self:center;display:inline-flex;align-items:center;gap:8px;background:var(--yema);color:#1d1d27;border:0;border-radius:9px;padding:9px 16px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.btn-repetir:hover{filter:brightness(1.06)}
+.btn-repetir svg{flex-shrink:0}
+.dato.total + .btn-repetir{margin-left:18px}
+.estado{display:block;margin:0;padding:5px 10px;font-size:12px;font-weight:700;color:#7a5200;background:#fff4d1;border-bottom:1px solid #f5d77a}
+table.lin{width:100%;border-collapse:collapse;font-size:14px}
+/* Moviles estrechos: el ejercicio ya va en la fecha, se oculta para que quepa el total */
+@media(max-width:390px){ .dato.ejer{display:none} .alb-cab{gap:6px 8px!important;padding:8px 8px!important} .dato > span{font-size:13.5px} }
+.alb-pie{display:flex;flex-wrap:nowrap;white-space:nowrap;justify-content:flex-end;gap:4px 18px;padding:9px 14px;background:#eef0ff;border-top:1px solid var(--linea);font-size:13.5px;color:var(--gris)}
+.alb-pie b{color:var(--azul)}
+.alb-pie .ct{display:none}
+@media(max-width:640px){ .alb-pie{gap:12px;padding:8px 10px;font-size:13px;justify-content:space-between} .alb-pie .lg{display:none} .alb-pie .ct{display:inline} }
+@media(max-width:360px){ .alb-pie{gap:8px;font-size:12px} }
+@media(min-width:641px){table.lin{table-layout:fixed}table.lin th:nth-child(1){width:90px}table.lin th:nth-child(3),table.lin th:nth-child(4),table.lin th:nth-child(5),table.lin th:nth-child(6){width:105px}}
+table.lin th{text-align:left;font-size:12px;color:var(--gris);font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:7px 12px;border-bottom:1px solid var(--linea);background:#fff}
+table.lin td{padding:7px 12px;border-bottom:1px solid var(--linea);vertical-align:top}
+table.lin tr:last-child td{border-bottom:0}
+table.lin tbody tr:nth-child(even) td{background:#fafafb}
+table.lin .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.lin .cod{font-weight:700;color:var(--azul);white-space:nowrap}
+table.lin .desc{font-weight:600}
+table.lin td.imp,table.lin b.imp{font-weight:700;color:var(--azul)}
+.vacio{background:#fff;border:1px dashed var(--linea);border-radius:12px;padding:30px;text-align:center;color:var(--gris)}
+.mas{display:block;margin:6px auto 0;background:#fff;color:var(--azul);border:2px solid var(--azul);border-radius:999px;padding:10px 26px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.mas:hover{background:#f1f0ff}
+.cargando{color:var(--gris);padding:30px;text-align:center}
+
+/* Movil: la cabecera en dos filas y cada linea en dos renglones (codigo + descripcion / cajas, unidades, precio) */
+@media(max-width:640px){
+  .top-inner{padding:10px 14px}
+  .logo-img{height:auto;width:100%;max-width:150px}
+  .top-left{gap:10px;min-width:0}
+  .top-left .logo{flex:1 1 auto;min-width:0}
+  .top-inner{gap:10px}
+  .top-info .tel-label{font-size:12px}
+  .top-info .tel-num{font-size:14px}
+  .btn-volver{flex-direction:column;justify-content:center;gap:2px;width:64px;height:64px;padding:0;flex-shrink:0;border-radius:12px;font-size:12px}
+  .btn-volver .flecha{font-size:22px;line-height:1}
+  .btn-volver .txt-largo{display:none}
+  .btn-volver .txt-tienda{text-transform:capitalize}
+  main{padding:16px 10px 50px}
+  .cab-pag h1{font-size:24px}
+  .alb-cab{gap:6px 11px;padding:8px 10px;flex-wrap:nowrap}
+  .btn-repetir{flex-direction:column;gap:1px;padding:5px 8px;font-size:11px;line-height:1.1;border-radius:8px}
+  .btn-repetir .txt-largo{display:none}
+  .dato label{font-size:9.5px}
+  .dato > span{font-size:14.5px}
+  .alb-cab{gap:6px 9px!important}
+  .dato label .lg{display:none}
+  .dato label .ct{display:inline}
+  .dato > span{font-size:14px}
+  .dato.total{margin-left:auto}
+  .dato.total + .btn-repetir{margin-left:4px}
+  table.lin thead{display:none}
+  table.lin,table.lin tbody{display:block;width:100%}
+  table.lin tr{display:grid;grid-template-columns:auto 1fr;column-gap:8px;padding:8px 12px;border-bottom:1px solid var(--linea)}
+  table.lin tbody tr:nth-child(even){background:#fafafb}
+  table.lin td{display:block;padding:0;border:0!important;background:transparent!important}
+  table.lin .cod{grid-column:1;grid-row:1}
+  table.lin .desc{grid-column:2;grid-row:1}
+  table.lin .cifras{grid-column:1 / span 2;grid-row:2;margin-top:3px;font-size:13px;color:var(--gris)}
+  table.lin .cifras b{color:var(--txt)}
+  table.lin td.n{display:none}
+}
+@media(min-width:641px){ table.lin .cifras{display:none} }
+
+/* Lista de facturas */
+.fac{display:flex;align-items:center;gap:10px 26px;background:#fff;border:1px solid var(--linea);border-radius:12px;padding:12px 16px;margin:0 0 12px;box-shadow:0 2px 10px rgba(13,1,144,.05)}
+.fac .dato label{color:var(--gris)}
+.fac .dato > span{color:var(--txt)}
+.fac .dato.total > span{color:var(--azul)}
+.btn-pdf{margin-left:18px;display:inline-flex;align-items:center;gap:8px;background:var(--azul);color:#fff;border:0;border-radius:9px;padding:9px 16px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.btn-pdf:hover{background:var(--azul2)}
+.btn-pdf:disabled{opacity:.6;cursor:wait}
+@media(max-width:640px){
+  .fac{gap:6px 12px;padding:10px 12px}
+  .btn-pdf{margin-left:6px;padding:8px 10px;font-size:13px}
+  .btn-pdf .txt-largo{display:none}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header class="top"><div class="top-inner">
+  <div class="top-left">
+    <a href="tiendaconprecio.html" class="logo"><img src="assets/logo.bmp" alt="Huevos Mateos" class="logo-img"></a>
+    <div class="top-info">
+      <span class="tel-label">Llamanos:</span>
+      <span class="tel-num">927 415 311</span>
+      <span class="tel-num">639 755 593</span>
+    </div>
+  </div>
+  <a href="tiendaconprecio.html" class="btn-volver" onclick="location.href='tiendaconprecio.html?v='+Date.now();return false;"><span class="flecha">&#8592;</span><span><span class="txt-largo">Volver a la </span><span class="txt-tienda">tienda</span></span></a>
+</div></header>
+
+<main>
+  <div class="cab-pag">
+    <h1>Mis facturas</h1>
+    <div class="cli" id="cli"></div>
+  </div>
+  <p class="nota">Facturas desde enero de 2026. Pulsa <b>Ver PDF</b> para abrirla o descargarla.</p>
+  <div id="lista"><p class="cargando">Cargando facturas&hellip;</p></div>
+  <button class="mas" id="btn-mas" style="display:none" onclick="cargar()">Ver m&aacute;s facturas</button>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://pkwttturncewwdlpxrxz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3R0dHVybmNld3dkbHB4cnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTQ1OTEsImV4cCI6MjA5NTczMDU5MX0.aFKZbuO-0zO--SckT-FnjkGdOAV5nBWeEoLgMcV80VY';
+var POR_PAGINA = 25;
+
+// Modo administrador (igual que en tiendaconprecio.html y mispedidos.html)
+var _adminCli = null;
+try{ _adminCli = sessionStorage.getItem('hm_admin_cliente') || null; }catch(e){}
+const sb = _adminCli
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: 'hm-admin-auth', persistSession: true, autoRefreshToken: true } })
+  : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+var _cod = '', _nombre = '', _nomCom = '', _pagina = 0, _facs = {};
+
+function esc(s){var d=document.createElement('div');d.textContent=(s==null?'':String(s));return d.innerHTML;}
+function nf(v,dec){ if(v==null||v==='') return ''; return Number(v).toLocaleString('es-ES',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+function fFecha(iso){ if(!iso) return ''; var p=String(iso).slice(0,10).split('-'); return p[2]+'-'+p[1]+'-'+p[0]; }
+
+function fila(f){
+  _facs[f.id]=f;
+  return '<article class="fac">'+
+    '<div class="dato"><label>Fecha</label><span>'+fFecha(f.fecha)+'</span></div>'+
+    '<div class="dato"><label>N&ordm; factura</label><span>'+esc(f.numero)+'</span></div>'+
+    '<div class="dato total"><label>Total</label><span>'+(f.total!=null?nf(f.total,2)+' &euro;':'&ndash;')+'</span></div>'+
+    '<button type="button" class="btn-pdf" onclick="verPdf(this,\''+esc(f.id)+'\')">'+
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6M9 15l3 3 3-3"/></svg>'+
+      '<span>Ver<span class="txt-largo"> PDF</span></span></button>'+
+  '</article>';
+}
+
+// Abre el PDF con un enlace temporal (2 minutos). La ventana se abre antes de pedir el enlace
+// para que el movil no la bloquee como ventana emergente.
+async function verPdf(btn, id){
+  var f=_facs[id]; if(!f) return;
+  var w=null; try{ w=window.open('', '_blank'); }catch(e){}
+  btn.disabled=true;
+  var r=await sb.storage.from('facturas').createSignedUrl(f.ruta, 120);
+  btn.disabled=false;
+  if(r.error || !r.data || !r.data.signedUrl){
+    if(w) w.close();
+    alert('No se ha podido abrir la factura. Int\u00e9ntalo de nuevo.');
+    console.error(r.error); return;
+  }
+  if(w) w.location.href=r.data.signedUrl; else location.href=r.data.signedUrl;
+}
+
+async function cargar(){
+  var desde=_pagina*POR_PAGINA, hasta=desde+POR_PAGINA-1;
+  var btn=document.getElementById('btn-mas'); btn.disabled=true;
+  var r = await sb.from('facturas').select('id,ejercicio,numero,fecha,total,ruta')
+    .eq('cliente_codigo', _cod)
+    .order('fecha', {ascending:false})
+    .order('numero', {ascending:false})
+    .range(desde, hasta);
+  btn.disabled=false;
+  var lista=document.getElementById('lista');
+  if(r.error){ lista.innerHTML='<p class="vacio">No se pudieron cargar las facturas. Recarga la p&aacute;gina.</p>'; console.error(r.error); return; }
+  var datos=r.data||[];
+  if(_pagina===0){
+    lista.innerHTML = datos.length ? '' : '<p class="vacio">Todav&iacute;a no hay facturas disponibles.</p>';
+  }
+  lista.insertAdjacentHTML('beforeend', datos.map(fila).join(''));
+  _pagina++;
+  btn.style.display = (datos.length===POR_PAGINA) ? 'block' : 'none';
+}
+
+sb.auth.getSession().then(async function(res){
+  var session = res.data && res.data.session;
+  var chk;
+  if(_adminCli){
+    if(!session || !session.user){ location.replace('admin.html'); return; }
+    var adm = await sb.rpc('es_admin');
+    if(adm.error || adm.data !== true){ location.replace('admin.html'); return; }
+    chk = await sb.from('clientes').select('codigo,nombre,nombre_comercial').eq('codigo', _adminCli).single();
+    var b=document.createElement('div'); b.className='admin-banner';
+    b.innerHTML='&#128274; MODO ADMINISTRADOR &middot; Facturas de '+esc(_adminCli);
+    document.body.insertBefore(b, document.body.firstChild);
+  } else {
+    if(!session || !session.user){ location.replace('tienda.html'); return; }
+    chk = await sb.from('clientes').select('codigo,nombre,nombre_comercial,puede_acceder').eq('email', String(session.user.email||'').toLowerCase()).single();
+    if(chk.error || !chk.data || !chk.data.puede_acceder){ location.replace('tienda.html'); return; }
+  }
+  if(chk.error || !chk.data){ document.getElementById('lista').innerHTML='<p class="vacio">No se pudieron cargar los datos del cliente.</p>'; return; }
+  _cod = chk.data.codigo || '';
+  _nombre = chk.data.nombre || '';
+  _nomCom = chk.data.nombre_comercial || '';
+  document.getElementById('cli').innerHTML='Cliente <b>'+esc(_cod)+'</b> &middot; '+esc(_nomCom||_nombre);
+  cargar();
+});
+</script>
+</body>
+</html>

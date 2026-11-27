@@ -476,8 +476,6 @@ body:has(#cart-panel.abierto) .hm-inst{display:none!important}
           <div class="menu-cli-cab" id="menu-cli-cab">Mi cuenta</div>
           <button type="button" role="menuitem" onclick="_menuCliente('pedidos')"><span class="mi">&#128230;</span>Mis &uacute;ltimos pedidos</button>
           <button type="button" role="menuitem" onclick="_menuCliente('facturas')"><span class="mi">&#129534;</span>Mis facturas</button>
-          <button type="button" role="menuitem" onclick="_menuCliente('albaranes')"><span class="mi">&#128203;</span>Mis albaranes</button>
-          <button type="button" role="menuitem" onclick="_menuCliente('datos')"><span class="mi">&#128100;</span>Mis datos</button>
           <hr>
           <button type="button" role="menuitem" class="mi-instalar" onclick="_cerrarMenuCliente(); window.hmInstalar && hmInstalar()"><span class="mi">&#128242;</span>Instalar app en el m&oacute;vil</button>
           <button type="button" role="menuitem" onclick="_menuCliente('contacto')"><span class="mi">&#128222;</span>Contacto</button>
@@ -2031,7 +2029,7 @@ window.addEventListener('popstate', function(){
 <script>
 /* ===== MENU DEL CLIENTE (tres rayas) ===== */
 // Destinos de cada opcion. Cuando exista la pagina, poner aqui su nombre y el menu navegara a ella.
-var MENU_PAGINAS={pedidos:'mispedidos.html', facturas:'', albaranes:'', datos:'', contacto:'contacto.html'};
+var MENU_PAGINAS={pedidos:'mispedidos.html', facturas:'misfacturas.html', contacto:'contacto.html'};
 function toggleMenuCliente(e){
   if(e) e.stopPropagation();
   var m=document.getElementById('menu-cli'), b=document.getElementById('menu-btn');
